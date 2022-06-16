@@ -11,6 +11,7 @@ import com.stripe.android.paymentsheet.PaymentOptionCallback
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResultCallback
 import com.stripe.android.paymentsheet.model.PaymentOptionFactory
+import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteResultCallback
 import kotlinx.coroutines.CoroutineScope
 
 internal class FlowControllerFactory(
@@ -22,12 +23,14 @@ internal class FlowControllerFactory(
     private val statusBarColor: () -> Int?,
     private val paymentOptionFactory: PaymentOptionFactory,
     private val paymentOptionCallback: PaymentOptionCallback,
-    private val paymentResultCallback: PaymentSheetResultCallback
+    private val paymentResultCallback: PaymentSheetResultCallback,
+    private val shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
 ) {
     constructor(
         activity: ComponentActivity,
         paymentOptionCallback: PaymentOptionCallback,
-        paymentResultCallback: PaymentSheetResultCallback
+        paymentResultCallback: PaymentSheetResultCallback,
+        shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
     ) : this(
         activity,
         activity.lifecycleScope,
@@ -37,13 +40,15 @@ internal class FlowControllerFactory(
         { activity.window.statusBarColor },
         PaymentOptionFactory(activity.resources),
         paymentOptionCallback,
-        paymentResultCallback
+        paymentResultCallback,
+        shippingAddressAutocompleteResultCallback
     )
 
     constructor(
         fragment: Fragment,
         paymentOptionCallback: PaymentOptionCallback,
-        paymentResultCallback: PaymentSheetResultCallback
+        paymentResultCallback: PaymentSheetResultCallback,
+        shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
     ) : this(
         fragment,
         fragment.lifecycleScope,
@@ -53,7 +58,8 @@ internal class FlowControllerFactory(
         { fragment.activity?.window?.statusBarColor },
         PaymentOptionFactory(fragment.resources),
         paymentOptionCallback,
-        paymentResultCallback
+        paymentResultCallback,
+        shippingAddressAutocompleteResultCallback
     )
 
     fun create(): PaymentSheet.FlowController =
@@ -66,6 +72,7 @@ internal class FlowControllerFactory(
             statusBarColor = statusBarColor,
             paymentOptionFactory = paymentOptionFactory,
             paymentOptionCallback = paymentOptionCallback,
-            paymentResultCallback = paymentResultCallback
+            paymentResultCallback = paymentResultCallback,
+            shippingAddressAutocompleteResultCallback = shippingAddressAutocompleteResultCallback
         )
 }

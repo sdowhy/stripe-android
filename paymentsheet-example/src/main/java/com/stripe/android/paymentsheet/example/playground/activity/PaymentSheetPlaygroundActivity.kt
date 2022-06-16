@@ -23,6 +23,7 @@ import com.stripe.android.paymentsheet.example.playground.model.CheckoutMode
 import com.stripe.android.paymentsheet.example.playground.model.Toggle
 import com.stripe.android.paymentsheet.example.playground.viewmodel.PaymentSheetPlaygroundViewModel
 import com.stripe.android.paymentsheet.model.PaymentOption
+import com.stripe.android.paymentsheet.shipping.ShippingAddress
 import kotlinx.coroutines.launch
 
 class PaymentSheetPlaygroundActivity : AppCompatActivity() {
@@ -124,7 +125,8 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         flowController = PaymentSheet.FlowController.create(
             this,
             ::onPaymentOption,
-            ::onPaymentSheetResult
+            ::onPaymentSheetResult,
+            ::onShippingResult
         )
         val backendUrl = Settings(this).playgroundBackendUrl
 
@@ -166,6 +168,11 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
 
         viewBinding.paymentMethod.setOnClickListener {
             flowController.presentPaymentOptions()
+        }
+
+        viewBinding.shippingAddressButton.setOnClickListener {
+            configureCustomCheckout()
+            flowController.presentShipping()
         }
 
         viewModel.status.observe(this) {
@@ -347,7 +354,8 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
             googlePay = googlePayConfig,
             defaultBillingDetails = defaultBilling,
             allowsDelayedPaymentMethods = viewBinding.allowsDelayedPaymentMethodsOnButton.isChecked,
-            appearance = appearance
+            appearance = appearance,
+            googlePlacesApiKey = ""
         )
     }
 
@@ -385,6 +393,10 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         }
 
         viewModel.status.value = paymentResult.toString()
+    }
+
+    private fun onShippingResult(shippingAddress: ShippingAddress?) {
+        println("ShippingAddress = $shippingAddress")
     }
 
     /**

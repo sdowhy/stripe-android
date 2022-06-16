@@ -13,6 +13,7 @@ import com.stripe.android.model.PaymentIntent
 import com.stripe.android.model.SetupIntent
 import com.stripe.android.paymentsheet.flowcontroller.FlowControllerFactory
 import com.stripe.android.paymentsheet.model.PaymentOption
+import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteResultCallback
 import com.stripe.android.ui.core.PaymentsThemeDefaults
 import com.stripe.android.ui.core.getRawValueFromDimenResource
 import kotlinx.parcelize.Parcelize
@@ -141,7 +142,12 @@ class PaymentSheet internal constructor(
         /**
          * Describes the appearance of Payment Sheet.
          */
-        val appearance: Appearance = Appearance()
+        val appearance: Appearance = Appearance(),
+
+        /**
+         * Google Places API Key required for shipping address element
+         */
+        val googlePlacesApiKey: String? = null
     ) : Parcelable {
         /**
          * [Configuration] builder for cleaner object creation from Java.
@@ -717,6 +723,8 @@ class PaymentSheet internal constructor(
          */
         fun presentPaymentOptions()
 
+        fun presentShipping()
+
         /**
          * Complete the payment or setup.
          */
@@ -751,12 +759,14 @@ class PaymentSheet internal constructor(
             fun create(
                 activity: ComponentActivity,
                 paymentOptionCallback: PaymentOptionCallback,
-                paymentResultCallback: PaymentSheetResultCallback
+                paymentResultCallback: PaymentSheetResultCallback,
+                shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
             ): FlowController {
                 return FlowControllerFactory(
                     activity,
                     paymentOptionCallback,
-                    paymentResultCallback
+                    paymentResultCallback,
+                    shippingAddressAutocompleteResultCallback
                 ).create()
             }
 
@@ -771,7 +781,8 @@ class PaymentSheet internal constructor(
             fun create(
                 fragment: Fragment,
                 paymentOptionCallback: PaymentOptionCallback,
-                paymentResultCallback: PaymentSheetResultCallback
+                paymentResultCallback: PaymentSheetResultCallback,
+                shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
             ): FlowController {
                 return FlowControllerFactory(
                     fragment,
