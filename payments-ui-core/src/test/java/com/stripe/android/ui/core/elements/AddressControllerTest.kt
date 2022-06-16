@@ -1,7 +1,10 @@
 package com.stripe.android.ui.core.elements
 
 import com.google.common.truth.Truth.assertThat
+import com.stripe.android.model.Address
 import com.stripe.android.ui.core.R
+import com.stripe.android.ui.core.elements.autocomplete.model.AddressComponent
+import com.stripe.android.ui.core.elements.autocomplete.model.Place
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -10,6 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowLooper
+import java.lang.NullPointerException
 
 @RunWith(RobolectricTestRunner::class)
 class AddressControllerTest {

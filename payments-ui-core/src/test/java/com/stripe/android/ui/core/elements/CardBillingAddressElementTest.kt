@@ -22,6 +22,7 @@ internal class CardBillingAddressElementTest {
         rawValuesMap = emptyMap(),
         addressFieldElementRepository,
         emptySet(),
+        googlePlacesApiKey = "",
         dropdownFieldController
     )
 

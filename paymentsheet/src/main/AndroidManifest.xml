@@ -11,5 +11,7 @@
             android:name=".PaymentOptionsActivity"
             android:theme="@style/StripePaymentSheetDefaultTheme"
             android:exported="false" />
+        <activity
+            android:name="com.stripe.android.ui.core.elements.shipping.ShippingAddressAutocompleteActivity" />
     </application>
 </manifest>

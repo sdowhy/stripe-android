@@ -47,6 +47,8 @@
 <!--    <color name="stripe_paymentsheet_testmode_background">#FFDE94</color>-->
 <!--    <color name="stripe_paymentsheet_testmode_text">#8E5710</color>-->
 
+    <color name="stripe_paymentsheet_shipping_address_background">#1A1A1A0D</color>
+
     <!-- CardFormView -->
 
 </resources>

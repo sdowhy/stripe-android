@@ -46,7 +46,8 @@ class TransformSpecToElements(
     private val saveForFutureUseInitialValue: Boolean,
     private val merchantName: String,
     private val context: Context,
-    private val viewOnlyFields: Set<IdentifierSpec> = emptySet()
+    private val viewOnlyFields: Set<IdentifierSpec> = emptySet(),
+    private val googlePlacesApiKey: String? = null
 ) {
     fun transform(
         list: List<FormItemSpec>
@@ -77,11 +78,13 @@ class TransformSpecToElements(
                 is CountrySpec -> it.transform(initialValues)
                 is AddressSpec -> it.transform(
                     initialValues,
-                    resourceRepository.getAddressRepository()
+                    resourceRepository.getAddressRepository(),
+                    googlePlacesApiKey
                 )
                 is CardBillingSpec -> it.transform(
                     resourceRepository.getAddressRepository(),
-                    initialValues
+                    initialValues,
+                    googlePlacesApiKey
                 )
                 is SepaMandateTextSpec -> it.transform(merchantName)
                 else -> EmptyFormElement()

@@ -258,7 +258,8 @@ internal abstract class BaseAddPaymentMethodFragment : Fragment() {
                             newLpm.paymentMethodCreateParams
                         else -> null
                     }
-                }
+                },
+                googlePlacesApiKey = config?.googlePlacesApiKey
             )
         }
     }

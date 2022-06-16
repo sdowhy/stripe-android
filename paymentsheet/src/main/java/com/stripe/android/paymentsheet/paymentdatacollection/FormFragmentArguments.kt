@@ -19,7 +19,8 @@ internal data class FormFragmentArguments(
     val amount: Amount? = null,
     val billingDetails: PaymentSheet.BillingDetails? = null,
     @InjectorKey val injectorKey: String,
-    val initialPaymentMethodCreateParams: PaymentMethodCreateParams? = null
+    val initialPaymentMethodCreateParams: PaymentMethodCreateParams? = null,
+    val googlePlacesApiKey: String? = null
 ) : Parcelable
 
 internal fun FormFragmentArguments.getInitialValuesMap(): Map<IdentifierSpec, String?> {

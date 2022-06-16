@@ -23,7 +23,8 @@ internal class TransformSpecToElement @Inject constructor(
             amount = formFragmentArguments.amount,
             saveForFutureUseInitialValue = formFragmentArguments.showCheckboxControlledFields,
             merchantName = formFragmentArguments.merchantName,
-            context = context
+            context = context,
+            googlePlacesApiKey = formFragmentArguments.googlePlacesApiKey
         )
 
     internal fun transform(list: List<FormItemSpec>) = transformSpecToElements.transform(list)

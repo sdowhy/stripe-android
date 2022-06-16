@@ -54,7 +54,8 @@ class AddressElementTest {
             val addressElement = AddressElement(
                 IdentifierSpec.Generic("address"),
                 addressFieldElementRepository,
-                countryDropdownFieldController = countryDropdownFieldController
+                countryDropdownFieldController = countryDropdownFieldController,
+                googlePlacesApiKey = ""
             )
             var emailController =
                 (
@@ -95,7 +96,8 @@ class AddressElementTest {
         val addressElement = AddressElement(
             IdentifierSpec.Generic("address"),
             addressFieldElementRepository,
-            countryDropdownFieldController = countryDropdownFieldController
+            countryDropdownFieldController = countryDropdownFieldController,
+            googlePlacesApiKey = ""
         )
         val formFieldValueFlow = addressElement.getFormFieldValueFlow()
         var emailController =
