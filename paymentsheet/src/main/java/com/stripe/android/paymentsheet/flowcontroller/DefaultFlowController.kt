@@ -49,10 +49,6 @@ import com.stripe.android.paymentsheet.model.PaymentOptionFactory
 import com.stripe.android.paymentsheet.model.PaymentSelection
 import com.stripe.android.paymentsheet.model.SavedSelection
 import com.stripe.android.paymentsheet.model.SetupIntentClientSecret
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteContract
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteResult
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteResultCallback
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteViewModel
 import com.stripe.android.paymentsheet.validate
 import com.stripe.android.ui.core.forms.resources.ResourceRepository
 import dagger.Lazy
@@ -79,8 +75,6 @@ internal class DefaultFlowController @Inject internal constructor(
     private val paymentOptionFactory: PaymentOptionFactory,
     private val paymentOptionCallback: PaymentOptionCallback,
     private val paymentResultCallback: PaymentSheetResultCallback,
-    private val shippingAddressAutocompleteResultCallback:
-    ShippingAddressAutocompleteResultCallback?,
     activityResultCaller: ActivityResultCaller,
     @InjectorKey private val injectorKey: String,
     // Properties provided through injection
@@ -104,8 +98,6 @@ internal class DefaultFlowController @Inject internal constructor(
         ActivityResultLauncher<PaymentOptionContract.Args>
     private var googlePayActivityLauncher:
         ActivityResultLauncher<GooglePayPaymentMethodLauncherContract.Args>
-    private val shippingActivityLauncher:
-        ActivityResultLauncher<ShippingAddressAutocompleteContract.Args>
 
     /**
      * [FlowControllerComponent] is hold to inject into [Activity]s and created
@@ -118,9 +110,6 @@ internal class DefaultFlowController @Inject internal constructor(
     override fun inject(injectable: Injectable<*>) {
         when (injectable) {
             is PaymentOptionsViewModel.Factory -> {
-                flowControllerComponent.inject(injectable)
-            }
-            is ShippingAddressAutocompleteViewModel.Factory -> {
                 flowControllerComponent.inject(injectable)
             }
             is FormViewModel.Factory -> {
@@ -163,11 +152,6 @@ internal class DefaultFlowController @Inject internal constructor(
             activityResultCaller.registerForActivityResult(
                 GooglePayPaymentMethodLauncherContract(),
                 ::onGooglePayResult
-            )
-        shippingActivityLauncher =
-            activityResultCaller.registerForActivityResult(
-                ShippingAddressAutocompleteContract(),
-                ::onShippingResult
             )
     }
 
@@ -254,30 +238,6 @@ internal class DefaultFlowController @Inject internal constructor(
                 enableLogging = enableLogging,
                 productUsage = productUsage
             )
-        )
-    }
-
-    override fun presentShipping() {
-        runCatching {
-            requireNotNull(viewModel.initData.config?.googlePlacesApiKey)
-        }.fold(
-            onSuccess = { googlePlacesApiKey ->
-                shippingActivityLauncher.launch(
-                    ShippingAddressAutocompleteContract.Args(
-                        country = "US",
-                        googlePlacesApiKey = googlePlacesApiKey,
-                        statusBarColor = statusBarColor(),
-                        injectorKey = injectorKey,
-                    )
-                )
-            },
-            onFailure = {
-                error(
-                    "FlowController must be successfully initialized using " +
-                        "configureWithPaymentIntent() or configureWithSetupIntent() " +
-                        "before calling presentShipping()"
-                )
-            }
         )
     }
 
@@ -445,17 +405,6 @@ internal class DefaultFlowController @Inject internal constructor(
         }
     }
 
-    internal fun onShippingResult(shippingAddressAutoCompleteResult: ShippingAddressAutocompleteResult?) {
-        when (shippingAddressAutoCompleteResult) {
-            is ShippingAddressAutocompleteResult.Succeeded -> {
-                shippingAddressAutocompleteResultCallback?.onShippingAddress(shippingAddressAutoCompleteResult.shippingAddress)
-            }
-            else -> {
-                shippingAddressAutocompleteResultCallback?.onShippingAddress(null)
-            }
-        }
-    }
-
     internal fun onPaymentResult(paymentResult: PaymentResult) {
         lifecycleScope.launch {
             paymentResultCallback.onPaymentSheetResult(
@@ -537,7 +486,6 @@ internal class DefaultFlowController @Inject internal constructor(
             paymentOptionFactory: PaymentOptionFactory,
             paymentOptionCallback: PaymentOptionCallback,
             paymentResultCallback: PaymentSheetResultCallback,
-            shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
         ): PaymentSheet.FlowController {
             val injectorKey =
                 WeakMapInjectorRegistry.nextKey(
@@ -553,7 +501,6 @@ internal class DefaultFlowController @Inject internal constructor(
                 .paymentOptionFactory(paymentOptionFactory)
                 .paymentOptionCallback(paymentOptionCallback)
                 .paymentResultCallback(paymentResultCallback)
-                .shippingResultCallback(shippingAddressAutocompleteResultCallback)
                 .injectorKey(injectorKey)
                 .build()
             val flowController = flowControllerComponent.flowController

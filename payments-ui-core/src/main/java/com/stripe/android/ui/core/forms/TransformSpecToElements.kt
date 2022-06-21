@@ -77,11 +77,13 @@ class TransformSpecToElements(
                 is CountrySpec -> it.transform(initialValues)
                 is AddressSpec -> it.transform(
                     initialValues,
-                    resourceRepository.getAddressRepository()
+                    resourceRepository.getAddressRepository(),
+                    "AIzaSyA3uM9KJIRorl-AimrdjnbizI41cRKJBTA"
                 )
                 is CardBillingSpec -> it.transform(
                     resourceRepository.getAddressRepository(),
-                    initialValues
+                    initialValues,
+                    "AIzaSyA3uM9KJIRorl-AimrdjnbizI41cRKJBTA"
                 )
                 is SepaMandateTextSpec -> it.transform(merchantName)
                 else -> EmptyFormElement()

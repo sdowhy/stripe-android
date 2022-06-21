@@ -24,7 +24,6 @@ dependencies {
     implementation project(":payments-core")
     implementation project(':payments-ui-core')
     compileOnly project(':financial-connections')
-    compileOnly "com.google.android.libraries.places:places:$placesVersion"
 
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
     implementation "androidx.appcompat:appcompat:$androidxAppcompatVersion"

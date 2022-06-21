@@ -13,9 +13,9 @@ import com.stripe.android.model.PaymentIntent
 import com.stripe.android.model.SetupIntent
 import com.stripe.android.paymentsheet.flowcontroller.FlowControllerFactory
 import com.stripe.android.paymentsheet.model.PaymentOption
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteResultCallback
 import com.stripe.android.ui.core.PaymentsThemeDefaults
 import com.stripe.android.ui.core.getRawValueFromDimenResource
+import com.stripe.android.ui.core.address.autocomplete.AddressAutocompleteResultCallback
 import kotlinx.parcelize.Parcelize
 
 /**
@@ -723,8 +723,6 @@ class PaymentSheet internal constructor(
          */
         fun presentPaymentOptions()
 
-        fun presentShipping()
-
         /**
          * Complete the payment or setup.
          */
@@ -759,14 +757,12 @@ class PaymentSheet internal constructor(
             fun create(
                 activity: ComponentActivity,
                 paymentOptionCallback: PaymentOptionCallback,
-                paymentResultCallback: PaymentSheetResultCallback,
-                shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
+                paymentResultCallback: PaymentSheetResultCallback
             ): FlowController {
                 return FlowControllerFactory(
                     activity,
                     paymentOptionCallback,
-                    paymentResultCallback,
-                    shippingAddressAutocompleteResultCallback
+                    paymentResultCallback
                 ).create()
             }
 
@@ -782,7 +778,7 @@ class PaymentSheet internal constructor(
                 fragment: Fragment,
                 paymentOptionCallback: PaymentOptionCallback,
                 paymentResultCallback: PaymentSheetResultCallback,
-                shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback? = null
+                addressAutocompleteResultCallback: AddressAutocompleteResultCallback? = null
             ): FlowController {
                 return FlowControllerFactory(
                     fragment,

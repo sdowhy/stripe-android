@@ -1,4 +1,4 @@
-package com.stripe.android.paymentsheet.shipping
+package com.stripe.android.ui.core.address.autocomplete
 
 import android.app.Application
 import android.os.Bundle
@@ -11,12 +11,16 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.stripe.android.core.injection.DUMMY_INJECTOR_KEY
 import com.stripe.android.core.injection.Injectable
 import com.stripe.android.core.injection.injectWithFallback
-import com.stripe.android.paymentsheet.R
-import com.stripe.android.paymentsheet.shipping.di.DaggerShippingAddressAutocompleteComponent
-import com.stripe.android.paymentsheet.shipping.di.ShippingAddressAutocompleteViewModelSubcomponent
+import com.stripe.android.model.Address
+import com.stripe.android.ui.core.R
+import com.stripe.android.ui.core.address.autocomplete.di.AddressAutocompleteViewModelSubcomponent
+import com.stripe.android.ui.core.address.autocomplete.di.DaggerAddressAutocompleteComponent
 import com.stripe.android.ui.core.elements.SimpleTextFieldConfig
 import com.stripe.android.ui.core.elements.SimpleTextFieldController
 import com.stripe.android.ui.core.elements.TextFieldIcon
+import com.stripe.android.ui.core.address.autocomplete.model.AddressComponent
+import com.stripe.android.ui.core.address.autocomplete.model.AutocompletePrediction
+import com.stripe.android.ui.core.address.autocomplete.model.Place
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -26,20 +30,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.lang.NullPointerException
 import javax.inject.Inject
 import javax.inject.Provider
 
-internal class ShippingAddressAutocompleteViewModel @Inject constructor(
+class AddressAutocompleteViewModel @Inject constructor(
     application: Application,
-    private val args: ShippingAddressAutocompleteContract.Args,
+    private val args: AddressAutocompleteContract.Args,
 ) : AndroidViewModel(application) {
     private val client = PlacesClientProxy.create(application, args.googlePlacesApiKey)
     private var searchJob: Job? = null
 
     val predictions = MutableStateFlow(listOf<AutocompletePrediction>())
     val loading = MutableStateFlow(false)
-    val shippingAddressResult = MutableStateFlow<Result<ShippingAddress?>?>(null)
+    val addressResult = MutableStateFlow<Result<Address?>?>(null)
     val autocompleteController = SimpleTextFieldController(
         SimpleTextFieldConfig(
             label = R.string.address_label_address,
@@ -62,10 +65,6 @@ internal class ShippingAddressAutocompleteViewModel @Inject constructor(
         )
     }
 
-    fun getPlacesPoweredByGoogleDrawable(): Int? {
-        return client.getPlacesPoweredByGoogleDrawable(getApplication())
-    }
-
     fun selectPrediction(prediction: AutocompletePrediction) {
         viewModelScope.launch {
             loading.value = true
@@ -74,39 +73,13 @@ internal class ShippingAddressAutocompleteViewModel @Inject constructor(
             ).fold(
                 onSuccess = {
                     it.place.addressComponents?.let { addressComponents ->
-                        val address = try {
-                            val (
-                                addressLine1,
-                                locality,
-                                administrativeAreaLevel1,
-                                country,
-                                postalCode
-                            ) = addressComponents.getComponents(
-                                listOf(Place.Type.STREET_NUMBER, Place.Type.ROUTE),
-                                listOf(Place.Type.LOCALITY),
-                                listOf(Place.Type.ADMINISTRATIVE_AREA_LEVEL_1),
-                                listOf(Place.Type.COUNTRY),
-                                listOf(Place.Type.POSTAL_CODE)
-                            )
-
-                            ShippingAddress(
-                                country = country,
-                                addressLine1 = addressLine1,
-                                city = locality,
-                                state = administrativeAreaLevel1,
-                                zip = postalCode
-                            )
-                        } catch (ex: Exception) {
-                            null
-                        }
-
                         loading.value = false
-                        shippingAddressResult.value = Result.success(address)
+                        addressResult.value = Result.success(addressComponents.toAddress())
                     }
                 },
                 onFailure = {
                     loading.value = false
-                    shippingAddressResult.value = Result.failure(it)
+                    addressResult.value = Result.failure(it)
                 }
             )
         }
@@ -132,7 +105,7 @@ internal class ShippingAddressAutocompleteViewModel @Inject constructor(
                         },
                         onFailure = {
                             loading.value = false
-                            shippingAddressResult.value = Result.failure(it)
+                            addressResult.value = Result.failure(it)
                         }
                     )
                 }
@@ -140,36 +113,47 @@ internal class ShippingAddressAutocompleteViewModel @Inject constructor(
         }
     }
 
-    @Throws(NullPointerException::class)
-    private fun List<AddressComponent>.getComponents(vararg types: List<Place.Type>): List<String> {
-        return types.map { type ->
-            type.joinToString(" ") {
-                find { component ->
-                    component.types.contains(it.value)
-                }!!.name
-            }
+    private fun List<AddressComponent>.toAddress(): Address {
+        val filter: (Place.Type) -> String? = { type ->
+            this.find { it.types.contains(type.value) }?.name
         }
+
+        val line1 = listOfNotNull(filter(Place.Type.STREET_NUMBER), filter(Place.Type.ROUTE))
+            .joinToString(" ")
+            .ifBlank { null }
+        val city = filter(Place.Type.LOCALITY) ?: filter(Place.Type.SUBLOCALITY)
+        val state = filter(Place.Type.ADMINISTRATIVE_AREA_LEVEL_1)
+        val country = filter(Place.Type.COUNTRY)
+        val postalCode = filter(Place.Type.POSTAL_CODE)
+
+        return Address.Builder()
+            .setLine1(line1)
+            .setCity(city)
+            .setState(state)
+            .setCountry(country)
+            .setPostalCode(postalCode)
+            .build()
     }
 
     private fun clearQuery() {
         autocompleteController.onRawValueChange("")
     }
 
-    internal class Factory(
+    class Factory(
         private val applicationSupplier: () -> Application,
-        private val argsSupplier: () -> ShippingAddressAutocompleteContract.Args,
+        private val argsSupplier: () -> AddressAutocompleteContract.Args,
         owner: SavedStateRegistryOwner,
         defaultArgs: Bundle? = null
     ) : AbstractSavedStateViewModelFactory(owner, defaultArgs),
         Injectable<Factory.FallbackInitializeParam> {
 
-        internal data class FallbackInitializeParam(
+        data class FallbackInitializeParam(
             val application: Application,
         )
 
         @Inject
         lateinit var subComponentBuilderProvider:
-            Provider<ShippingAddressAutocompleteViewModelSubcomponent.Builder>
+            Provider<AddressAutocompleteViewModelSubcomponent.Builder>
 
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(
@@ -191,7 +175,7 @@ internal class ShippingAddressAutocompleteViewModel @Inject constructor(
         }
 
         override fun fallbackInitialize(arg: FallbackInitializeParam) {
-            DaggerShippingAddressAutocompleteComponent
+            DaggerAddressAutocompleteComponent
                 .builder()
                 .injectorKey(DUMMY_INJECTOR_KEY)
                 .build().inject(this)

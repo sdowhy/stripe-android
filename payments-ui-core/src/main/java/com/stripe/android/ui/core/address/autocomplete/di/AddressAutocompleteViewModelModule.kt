@@ -1,4 +1,4 @@
-package com.stripe.android.paymentsheet.shipping.di
+package com.stripe.android.ui.core.address.autocomplete.di
 
 import android.app.Application
 import android.content.Context
@@ -12,9 +12,9 @@ import dagger.Provides
 import javax.inject.Named
 
 @Module(
-    subcomponents = [ShippingAddressAutocompleteViewModelSubcomponent::class]
+    subcomponents = [AddressAutocompleteViewModelSubcomponent::class]
 )
-internal class ShippingAddressAutocompleteViewModelModule {
+internal class AddressAutocompleteViewModelModule {
     @Provides
     fun providesAppContext(application: Application): Context = application
 

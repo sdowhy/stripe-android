@@ -15,8 +15,6 @@ import com.stripe.android.paymentsheet.PaymentSheetResultCallback
 import com.stripe.android.paymentsheet.flowcontroller.DefaultFlowController
 import com.stripe.android.paymentsheet.forms.FormViewModel
 import com.stripe.android.paymentsheet.model.PaymentOptionFactory
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteResultCallback
-import com.stripe.android.paymentsheet.shipping.ShippingAddressAutocompleteViewModel
 import com.stripe.android.ui.core.forms.resources.injection.ResourceRepositoryModule
 import dagger.BindsInstance
 import dagger.Component
@@ -39,7 +37,6 @@ internal interface FlowControllerComponent {
     val flowController: DefaultFlowController
 
     fun inject(paymentOptionsViewModel: PaymentOptionsViewModel.Factory)
-    fun inject(shippingAddressAutocompleteViewModel: ShippingAddressAutocompleteViewModel.Factory)
     fun inject(factory: FormViewModel.Factory)
 
     @Component.Builder
@@ -70,9 +67,6 @@ internal interface FlowControllerComponent {
 
         @BindsInstance
         fun paymentResultCallback(paymentResultCallback: PaymentSheetResultCallback): Builder
-
-        @BindsInstance
-        fun shippingResultCallback(shippingAddressAutocompleteResultCallback: ShippingAddressAutocompleteResultCallback?): Builder
 
         @BindsInstance
         fun injectorKey(@InjectorKey injectorKey: String): Builder

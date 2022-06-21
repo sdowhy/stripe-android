@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -97,6 +99,8 @@ fun TextField(
     modifier: Modifier = Modifier,
     imeAction: ImeAction,
     enabled: Boolean,
+    readOnly: Boolean = false,
+    interactionSource: MutableInteractionSource? = null,
     onTextStateChanged: (TextFieldState?) -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
@@ -137,6 +141,7 @@ fun TextField(
                 onTextStateChanged(newTextState)
             }
         },
+        readOnly = readOnly,
         modifier = modifier
             .fillMaxWidth()
             .onPreviewKeyEvent { event ->
@@ -192,6 +197,7 @@ fun TextField(
                 }
             }
         },
+        interactionSource = interactionSource ?: remember { MutableInteractionSource() },
         isError = shouldShowError,
         visualTransformation = textFieldController.visualTransformation,
         keyboardOptions = KeyboardOptions(

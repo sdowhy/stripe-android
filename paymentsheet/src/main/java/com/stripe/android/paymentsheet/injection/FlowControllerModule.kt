@@ -14,7 +14,6 @@ import com.stripe.android.paymentsheet.flowcontroller.DefaultFlowControllerIniti
 import com.stripe.android.paymentsheet.flowcontroller.FlowControllerInitializer
 import com.stripe.android.paymentsheet.flowcontroller.FlowControllerViewModel
 import com.stripe.android.paymentsheet.model.ClientSecret
-import com.stripe.android.paymentsheet.shipping.di.ShippingAddressAutocompleteViewModelSubcomponent
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -26,7 +25,6 @@ import kotlin.coroutines.CoroutineContext
 @Module(
     subcomponents = [
         PaymentOptionsViewModelSubcomponent::class,
-        ShippingAddressAutocompleteViewModelSubcomponent::class,
         FormViewModelSubcomponent::class
     ]
 )

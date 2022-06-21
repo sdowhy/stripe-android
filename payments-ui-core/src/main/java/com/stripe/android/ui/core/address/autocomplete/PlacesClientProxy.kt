@@ -1,4 +1,4 @@
-package com.stripe.android.paymentsheet.shipping
+package com.stripe.android.ui.core.address.autocomplete
 
 import android.content.Context
 import com.google.android.libraries.places.api.Places
@@ -7,8 +7,13 @@ import com.google.android.libraries.places.api.model.TypeFilter
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.stripe.android.BuildConfig
-import com.stripe.android.paymentsheet.R
+import com.stripe.android.ui.core.R
 import com.stripe.android.ui.core.isSystemDarkTheme
+import com.stripe.android.ui.core.address.autocomplete.model.AddressComponent
+import com.stripe.android.ui.core.address.autocomplete.model.AutocompletePrediction
+import com.stripe.android.ui.core.address.autocomplete.model.FetchPlaceResponse
+import com.stripe.android.ui.core.address.autocomplete.model.FindAutocompletePredictionsResponse
+import com.stripe.android.ui.core.address.autocomplete.model.Place
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -23,8 +28,6 @@ interface PlacesClientProxy {
         placeId: String
     ) : Result<FetchPlaceResponse>
 
-    fun getPlacesPoweredByGoogleDrawable(context: Context): Int?
-
     companion object {
         fun create(
             context: Context,
@@ -38,6 +41,23 @@ interface PlacesClientProxy {
                 )
             } else {
                 UnsupportedPlacesClientProxy()
+            }
+        }
+
+        fun getPlacesPoweredByGoogleDrawable(context: Context): Int? {
+            return if (DefaultIsPlacesAvailable().invoke()) {
+                if (context.isSystemDarkTheme()) {
+                    R.drawable.places_powered_by_google_dark
+                } else {
+                    R.drawable.places_powered_by_google_light
+                }
+            } else {
+                if (BuildConfig.DEBUG) {
+                    throw IllegalStateException(
+                        "Missing Google Places dependency, please add it to your apps build.gradle"
+                    )
+                }
+                null
             }
         }
     }
@@ -113,6 +133,7 @@ private class DefaultPlacesClientProxy(
                         FetchPlaceResponse(
                             Place(
                                 response.place.addressComponents?.asList()?.map {
+
                                     AddressComponent(
                                         name = it.name,
                                         types = it.types
@@ -132,14 +153,6 @@ private class DefaultPlacesClientProxy(
         }
 
         return result
-    }
-
-    override fun getPlacesPoweredByGoogleDrawable(context: Context): Int? {
-        return if (context.isSystemDarkTheme()) {
-            R.drawable.places_powered_by_google_dark
-        } else {
-            R.drawable.places_powered_by_google_light
-        }
     }
 }
 
@@ -167,15 +180,6 @@ private class UnsupportedPlacesClientProxy: PlacesClientProxy {
         }
         return Result.failure(exception)
     }
-
-    override fun getPlacesPoweredByGoogleDrawable(context: Context): Int? {
-        if (BuildConfig.DEBUG) {
-            throw IllegalStateException(
-                "Missing Google Places dependency, please add it to your apps build.gradle"
-            )
-        }
-        return null
-    }
 }
 
 internal interface IsPlacesAvailable {
@@ -192,35 +196,3 @@ private class DefaultIsPlacesAvailable : IsPlacesAvailable {
         }
     }
 }
-
-data class FindAutocompletePredictionsResponse(
-    val autocompletePredictions: List<AutocompletePrediction>
-)
-
-data class AutocompletePrediction(
-    val primaryText: String,
-    val secondaryText: String,
-    val placeId: String
-)
-
-data class FetchPlaceResponse(
-    val place: Place
-)
-
-data class Place(
-    val addressComponents: List<AddressComponent>?
-) {
-    enum class Type(val value: String) {
-        STREET_NUMBER("street_number"),
-        ROUTE("route"),
-        LOCALITY("locality"),
-        ADMINISTRATIVE_AREA_LEVEL_1("administrative_area_level_1"),
-        COUNTRY("country"),
-        POSTAL_CODE("postal_code")
-    }
-}
-
-data class AddressComponent(
-    val name: String,
-    val types: List<String>
-)

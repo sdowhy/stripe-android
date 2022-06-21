@@ -1,16 +1,17 @@
-package com.stripe.android.paymentsheet.shipping
+package com.stripe.android.ui.core.address.autocomplete
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.core.os.bundleOf
+import com.stripe.android.model.Address
 import com.stripe.android.view.ActivityStarter
 import kotlinx.parcelize.Parcelize
 
-sealed class ShippingAddressAutocompleteResult(
+sealed class AddressAutocompleteResult(
     val resultCode: Int,
-    open val shippingAddress: ShippingAddress? = null
+    open val address: Address? = null
 ) : Parcelable {
     fun toBundle(): Bundle {
         return bundleOf(EXTRA_RESULT to this)
@@ -18,26 +19,26 @@ sealed class ShippingAddressAutocompleteResult(
 
     @Parcelize
     data class Succeeded(
-        override val shippingAddress: ShippingAddress? = null
-    ) : ShippingAddressAutocompleteResult(Activity.RESULT_OK, shippingAddress)
+        override val address: Address? = null
+    ) : AddressAutocompleteResult(Activity.RESULT_OK, address)
 
     @Parcelize
     data class Failed(
         val error: Throwable,
-        override val shippingAddress: ShippingAddress? = null
-    ) : ShippingAddressAutocompleteResult(Activity.RESULT_CANCELED, shippingAddress)
+        override val address: Address? = null
+    ) : AddressAutocompleteResult(Activity.RESULT_CANCELED, address)
 
     @Parcelize
     data class Canceled(
         val mostRecentError: Throwable?,
-        override val shippingAddress: ShippingAddress? = null
-    ) : ShippingAddressAutocompleteResult(Activity.RESULT_CANCELED, shippingAddress)
+        override val address: Address? = null
+    ) : AddressAutocompleteResult(Activity.RESULT_CANCELED, address)
 
     internal companion object {
         private const val EXTRA_RESULT = ActivityStarter.Result.EXTRA
 
         @JvmSynthetic
-        internal fun fromIntent(intent: Intent?): ShippingAddressAutocompleteResult? {
+        internal fun fromIntent(intent: Intent?): AddressAutocompleteResult? {
             return intent?.getParcelableExtra(EXTRA_RESULT)
         }
     }
