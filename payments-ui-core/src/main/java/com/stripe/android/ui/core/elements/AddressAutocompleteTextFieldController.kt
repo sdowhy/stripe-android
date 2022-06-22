@@ -1,23 +1,9 @@
-package com.stripe.android.ui.core.address.autocomplete
+package com.stripe.android.ui.core.elements
 
-import android.app.Application
-import android.os.Bundle
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.savedstate.SavedStateRegistryOwner
-import com.stripe.android.core.injection.DUMMY_INJECTOR_KEY
-import com.stripe.android.core.injection.Injectable
-import com.stripe.android.core.injection.injectWithFallback
+import android.content.Context
 import com.stripe.android.model.Address
 import com.stripe.android.ui.core.R
-import com.stripe.android.ui.core.address.autocomplete.di.AddressAutocompleteViewModelSubcomponent
-import com.stripe.android.ui.core.address.autocomplete.di.DaggerAddressAutocompleteComponent
-import com.stripe.android.ui.core.elements.SimpleTextFieldConfig
-import com.stripe.android.ui.core.elements.SimpleTextFieldController
-import com.stripe.android.ui.core.elements.TextFieldIcon
+import com.stripe.android.ui.core.address.autocomplete.PlacesClientProxy
 import com.stripe.android.ui.core.address.autocomplete.model.AddressComponent
 import com.stripe.android.ui.core.address.autocomplete.model.AutocompletePrediction
 import com.stripe.android.ui.core.address.autocomplete.model.Place
@@ -30,14 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Provider
 
-class AddressAutocompleteViewModel @Inject constructor(
-    application: Application,
-    private val args: AddressAutocompleteContract.Args,
-) : AndroidViewModel(application) {
-    private val client = PlacesClientProxy.create(application, args.googlePlacesApiKey)
+class AddressAutocompleteTextFieldController(
+    context: Context,
+    val country: String,
+    val googlePlacesApiKey: String,
+    val workerScope: CoroutineScope
+) : Controller {
+
+    private val client = PlacesClientProxy.create(context, googlePlacesApiKey)
     private var searchJob: Job? = null
 
     val predictions = MutableStateFlow(listOf<AutocompletePrediction>())
@@ -58,15 +45,15 @@ class AddressAutocompleteViewModel @Inject constructor(
 
     init {
         startWatching(
-            viewModelScope,
+            workerScope,
             autocompleteController.formFieldValue
                 .map { it.takeIf { it.isComplete }?.value }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), "")
+                .stateIn(workerScope, SharingStarted.WhileSubscribed(), "")
         )
     }
 
     fun selectPrediction(prediction: AutocompletePrediction) {
-        viewModelScope.launch {
+        workerScope.launch {
             loading.value = true
             client.fetchPlace(
                 placeId = prediction.placeId
@@ -96,7 +83,7 @@ class AddressAutocompleteViewModel @Inject constructor(
                     delay(SEARCH_DEBOUNCE_MS)
                     client.findAutocompletePredictions(
                         query = query,
-                        country = args.country,
+                        country = country,
                         limit = AUTO_COMPLETE_LIMIT
                     ).fold(
                         onSuccess = {
@@ -137,49 +124,6 @@ class AddressAutocompleteViewModel @Inject constructor(
 
     private fun clearQuery() {
         autocompleteController.onRawValueChange("")
-    }
-
-    class Factory(
-        private val applicationSupplier: () -> Application,
-        private val argsSupplier: () -> AddressAutocompleteContract.Args,
-        owner: SavedStateRegistryOwner,
-        defaultArgs: Bundle? = null
-    ) : AbstractSavedStateViewModelFactory(owner, defaultArgs),
-        Injectable<Factory.FallbackInitializeParam> {
-
-        data class FallbackInitializeParam(
-            val application: Application,
-        )
-
-        @Inject
-        lateinit var subComponentBuilderProvider:
-            Provider<AddressAutocompleteViewModelSubcomponent.Builder>
-
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(
-            key: String,
-            modelClass: Class<T>,
-            savedStateHandle: SavedStateHandle
-        ): T {
-            val args = argsSupplier()
-
-            injectWithFallback(args.injectorKey,
-                FallbackInitializeParam(applicationSupplier())
-            )
-
-            return subComponentBuilderProvider.get()
-                .configuration(args)
-                .application(applicationSupplier())
-                .savedStateHandle(savedStateHandle)
-                .build().viewModel as T
-        }
-
-        override fun fallbackInitialize(arg: FallbackInitializeParam) {
-            DaggerAddressAutocompleteComponent
-                .builder()
-                .injectorKey(DUMMY_INJECTOR_KEY)
-                .build().inject(this)
-        }
     }
 
     private companion object {
