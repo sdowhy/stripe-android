@@ -3,6 +3,7 @@ package com.stripe.android.paymentsheet.addresselement
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
+import androidx.annotation.RestrictTo
 import androidx.fragment.app.Fragment
 import com.stripe.android.core.injection.InjectorKey
 import com.stripe.android.core.injection.WeakMapInjectorRegistry
@@ -12,7 +13,8 @@ import kotlinx.parcelize.Parcelize
 /**
  * A drop-in class that presents a bottom sheet to collect a customer's address.
  */
-internal class AddressLauncher internal constructor(
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+class AddressLauncher internal constructor(
     private val activityResultLauncher: ActivityResultLauncher<AddressElementActivityContract.Args>
 ) {
     @InjectorKey
@@ -64,8 +66,9 @@ internal class AddressLauncher internal constructor(
     }
 
     /** Configuration for [AddressLauncher] **/
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     @Parcelize
-    internal data class Configuration @JvmOverloads constructor(
+    data class Configuration @JvmOverloads constructor(
         /**
          * Configuration for the look and feel of the UI
          */

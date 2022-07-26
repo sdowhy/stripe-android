@@ -80,3 +80,8 @@ data class CheckoutResponse(
             null
         }
 }
+
+@Serializable
+data class GooglePlacesApiKeyResponse(
+    val key: String
+)

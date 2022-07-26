@@ -722,6 +722,44 @@ public final class com/stripe/android/paymentsheet/PaymentSheetViewModel_Factory
 	public static fun injectSubComponentBuilderProvider (Lcom/stripe/android/paymentsheet/PaymentSheetViewModel$Factory;Ljavax/inject/Provider;)V
 }
 
+public final class com/stripe/android/paymentsheet/addresselement/AddressDetails : android/os/Parcelable {
+	public static final field $stable I
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public static final field Companion Lcom/stripe/android/paymentsheet/addresselement/AddressDetails$Companion;
+	public static final field KEY Ljava/lang/String;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;
+	public static synthetic fun copy$default (Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;
+	public fun describeContents ()I
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCity ()Ljava/lang/String;
+	public final fun getCompany ()Ljava/lang/String;
+	public final fun getCountry ()Ljava/lang/String;
+	public final fun getLine1 ()Ljava/lang/String;
+	public final fun getLine2 ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getPhoneNumber ()Ljava/lang/String;
+	public final fun getPostalCode ()Ljava/lang/String;
+	public final fun getState ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public fun writeToParcel (Landroid/os/Parcel;I)V
+}
+
+public final class com/stripe/android/paymentsheet/addresselement/AddressDetails$Companion {
+}
+
 public final class com/stripe/android/paymentsheet/addresselement/AddressDetails$Creator : android/os/Parcelable$Creator {
 	public fun <init> ()V
 	public final fun createFromParcel (Landroid/os/Parcel;)Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;
@@ -730,12 +768,47 @@ public final class com/stripe/android/paymentsheet/addresselement/AddressDetails
 	public synthetic fun newArray (I)[Ljava/lang/Object;
 }
 
+public final class com/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args : com/stripe/android/view/ActivityStarter$Args {
+	public static final field $stable I
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public static final field Companion Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args$Companion;
+	public final fun copy (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration;Ljava/lang/String;)Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args;
+	public static synthetic fun copy$default (Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args;Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration;Ljava/lang/String;ILjava/lang/Object;)Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args;
+	public fun describeContents ()I
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public fun writeToParcel (Landroid/os/Parcel;I)V
+}
+
+public final class com/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args$Companion {
+}
+
 public final class com/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args$Creator : android/os/Parcelable$Creator {
 	public fun <init> ()V
 	public final fun createFromParcel (Landroid/os/Parcel;)Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args;
 	public synthetic fun createFromParcel (Landroid/os/Parcel;)Ljava/lang/Object;
 	public final fun newArray (I)[Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Args;
 	public synthetic fun newArray (I)[Ljava/lang/Object;
+}
+
+public final class com/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Companion {
+}
+
+public final class com/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Result : com/stripe/android/view/ActivityStarter$Result {
+	public static final field $stable I
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public fun <init> (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult;)V
+	public final fun component1 ()Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult;
+	public final fun copy (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult;)Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Result;
+	public static synthetic fun copy$default (Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Result;Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult;ILjava/lang/Object;)Lcom/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Result;
+	public fun describeContents ()I
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAddressOptionsResult ()Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult;
+	public fun hashCode ()I
+	public fun toBundle ()Landroid/os/Bundle;
+	public fun toString ()Ljava/lang/String;
+	public fun writeToParcel (Landroid/os/Parcel;I)V
 }
 
 public final class com/stripe/android/paymentsheet/addresselement/AddressElementActivityContract$Result$Creator : android/os/Parcelable$Creator {
@@ -770,12 +843,50 @@ public final class com/stripe/android/paymentsheet/addresselement/AddressElement
 	public static fun injectViewModel (Lcom/stripe/android/paymentsheet/addresselement/AddressElementViewModel$Factory;Lcom/stripe/android/paymentsheet/addresselement/AddressElementViewModel;)V
 }
 
+public final class com/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration : java/lang/Enum, android/os/Parcelable {
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public static final field HIDDEN Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
+	public static final field OPTIONAL Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
+	public static final field REQUIRED Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
+	public fun describeContents ()I
+	public static fun valueOf (Ljava/lang/String;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
+	public static fun values ()[Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
+	public fun writeToParcel (Landroid/os/Parcel;I)V
+}
+
 public final class com/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration$Creator : android/os/Parcelable$Creator {
 	public fun <init> ()V
 	public final fun createFromParcel (Landroid/os/Parcel;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
 	public synthetic fun createFromParcel (Landroid/os/Parcel;)Ljava/lang/Object;
 	public final fun newArray (I)[Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
 	public synthetic fun newArray (I)[Ljava/lang/Object;
+}
+
+public final class com/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder {
+	public static final field $stable I
+	public fun <init> ()V
+	public final fun allowedCountries (Ljava/util/Set;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
+	public final fun appearance (Lcom/stripe/android/paymentsheet/PaymentSheet$Appearance;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
+	public final fun build ()Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration;
+	public final fun buttonTitle (Ljava/lang/String;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
+	public final fun defaultValues (Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
+	public final fun getAllowedCountries ()Ljava/util/Set;
+	public final fun getAppearance ()Lcom/stripe/android/paymentsheet/PaymentSheet$Appearance;
+	public final fun getButtonTitle ()Ljava/lang/String;
+	public final fun getDefaultValues ()Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;
+	public final fun getGooglePlacesApiKey ()Ljava/lang/String;
+	public final fun getPhone ()Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;
+	public final fun getShouldShowCheckBox ()Z
+	public final fun googlePlacesApiKey (Ljava/lang/String;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
+	public final fun phone (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
+	public final fun setAllowedCountries (Ljava/util/Set;)V
+	public final fun setAppearance (Lcom/stripe/android/paymentsheet/PaymentSheet$Appearance;)V
+	public final fun setButtonTitle (Ljava/lang/String;)V
+	public final fun setDefaultValues (Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;)V
+	public final fun setGooglePlacesApiKey (Ljava/lang/String;)V
+	public final fun setPhone (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$AdditionalFieldsConfiguration;)V
+	public final fun setShouldShowCheckBox (Z)V
+	public final fun shouldShowCheckBox (Z)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Builder;
 }
 
 public final class com/stripe/android/paymentsheet/addresselement/AddressLauncher$Configuration$Creator : android/os/Parcelable$Creator {
@@ -786,6 +897,14 @@ public final class com/stripe/android/paymentsheet/addresselement/AddressLaunche
 	public synthetic fun newArray (I)[Ljava/lang/Object;
 }
 
+public final class com/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Canceled : com/stripe/android/paymentsheet/addresselement/AddressLauncherResult {
+	public static final field $stable I
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public static final field INSTANCE Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Canceled;
+	public fun describeContents ()I
+	public fun writeToParcel (Landroid/os/Parcel;I)V
+}
+
 public final class com/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Canceled$Creator : android/os/Parcelable$Creator {
 	public fun <init> ()V
 	public final fun createFromParcel (Landroid/os/Parcel;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Canceled;
@@ -794,12 +913,42 @@ public final class com/stripe/android/paymentsheet/addresselement/AddressLaunche
 	public synthetic fun newArray (I)[Ljava/lang/Object;
 }
 
+public final class com/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed : com/stripe/android/paymentsheet/addresselement/AddressLauncherResult {
+	public static final field $stable I
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public fun <init> (Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Throwable;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed;
+	public static synthetic fun copy$default (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed;
+	public fun describeContents ()I
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Ljava/lang/Throwable;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public fun writeToParcel (Landroid/os/Parcel;I)V
+}
+
 public final class com/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed$Creator : android/os/Parcelable$Creator {
 	public fun <init> ()V
 	public final fun createFromParcel (Landroid/os/Parcel;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed;
 	public synthetic fun createFromParcel (Landroid/os/Parcel;)Ljava/lang/Object;
 	public final fun newArray (I)[Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Failed;
 	public synthetic fun newArray (I)[Ljava/lang/Object;
+}
+
+public final class com/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Succeeded : com/stripe/android/paymentsheet/addresselement/AddressLauncherResult {
+	public static final field $stable I
+	public static final field CREATOR Landroid/os/Parcelable$Creator;
+	public fun <init> (Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;)V
+	public final fun component1 ()Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;
+	public final fun copy (Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Succeeded;
+	public static synthetic fun copy$default (Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Succeeded;Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;ILjava/lang/Object;)Lcom/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Succeeded;
+	public fun describeContents ()I
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAddress ()Lcom/stripe/android/paymentsheet/addresselement/AddressDetails;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public fun writeToParcel (Landroid/os/Parcel;I)V
 }
 
 public final class com/stripe/android/paymentsheet/addresselement/AddressLauncherResult$Succeeded$Creator : android/os/Parcelable$Creator {

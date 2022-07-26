@@ -1,7 +1,10 @@
 package com.stripe.android.paymentsheet.example.playground.activity
 
+import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.annotation.NonNull
@@ -18,6 +21,9 @@ import com.stripe.android.core.model.CountryCode
 import com.stripe.android.core.model.CountryUtils
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
+import com.stripe.android.paymentsheet.addresselement.AddressDetails
+import com.stripe.android.paymentsheet.addresselement.AddressLauncher
+import com.stripe.android.paymentsheet.addresselement.AddressLauncherResult
 import com.stripe.android.paymentsheet.example.R
 import com.stripe.android.paymentsheet.example.Settings
 import com.stripe.android.paymentsheet.example.databinding.ActivityPaymentSheetPlaygroundBinding
@@ -29,7 +35,6 @@ import com.stripe.android.paymentsheet.example.playground.viewmodel.PaymentSheet
 import com.stripe.android.paymentsheet.model.PaymentOption
 import kotlinx.coroutines.launch
 import java.util.Locale
-
 
 class PaymentSheetPlaygroundActivity : AppCompatActivity() {
     private val viewBinding by lazy {
@@ -101,8 +106,13 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
     private val setDelayedPaymentMethods: Boolean
         get() = viewBinding.allowsDelayedPaymentMethodsRadioGroup.checkedRadioButtonId == R.id.allowsDelayedPaymentMethods_on_button
 
+    private val settings by lazy {
+        Settings(this)
+    }
+
     private lateinit var paymentSheet: PaymentSheet
     private lateinit var flowController: PaymentSheet.FlowController
+    private lateinit var addressLauncher: AddressLauncher
 
     @Nullable
     private var multiStepUIReadyIdlingResource: CountingIdlingResource? = null
@@ -130,7 +140,7 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
             ::onPaymentOption,
             ::onPaymentSheetResult
         )
-        val backendUrl = Settings(this).playgroundBackendUrl
+        addressLauncher = AddressLauncher(this, ::onAddressLauncherResult)
 
         viewBinding.currencySpinner.adapter =
             ArrayAdapter(
@@ -184,7 +194,7 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
                     linkEnabled,
                     setShippingAddress,
                     setAutomaticPaymentMethods,
-                    backendUrl
+                    settings.playgroundBackendUrl
                 )
             }
         }
@@ -196,6 +206,12 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         viewBinding.customCheckoutButton.setOnClickListener {
             flowController.confirm()
         }
+
+        viewBinding.shippingAddressButton.setOnClickListener {
+            startShippingAddressCollection()
+        }
+
+        viewBinding.shippingAddressContainer.visibility = View.GONE
 
         viewBinding.paymentMethod.setOnClickListener {
             flowController.presentPaymentOptions()
@@ -355,6 +371,48 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         }
     }
 
+    private fun startShippingAddressCollection() {
+        val builder = AddressLauncher.Configuration.Builder()
+        builder.googlePlacesApiKey(settings.googlePlacesApiKey)
+        if (viewBinding.shippingAddressDefaultRadioGroup.checkedRadioButtonId ==
+            viewBinding.shippingAddressDefaultOnButton.id) {
+            builder.defaultValues(
+                AddressDetails(
+                    name = "Theo Parker",
+                    city = "South San Francisco",
+                    country = "United States",
+                    line1 = "354 Oyster Point Blvd",
+                    state = "CA",
+                    postalCode = "94080",
+                    phoneNumber = "5555555555"
+                )
+            )
+        }
+        if (viewBinding.shippingAddressCountriesGroup.checkedRadioButtonId ==
+            viewBinding.shippingAddressCountriesPartialButton.id) {
+            builder.allowedCountries(
+                setOf("US", "CA", "AU", "GB", "FR", "JP", "KR")
+            )
+        }
+        when (viewBinding.shippingAddressPhoneRadioGroup.checkedRadioButtonId) {
+            viewBinding.shippingAddressPhoneRequiredButton.id -> {
+                builder.phone(AddressLauncher.AdditionalFieldsConfiguration.REQUIRED)
+            }
+            viewBinding.shippingAddressPhoneOptionalButton.id -> {
+                builder.phone(AddressLauncher.AdditionalFieldsConfiguration.OPTIONAL)
+            }
+            viewBinding.shippingAddressPhoneHiddenButton.id -> {
+                builder.phone(AddressLauncher.AdditionalFieldsConfiguration.HIDDEN)
+            }
+        }
+        if (viewBinding.shippingAddressButtonTitle.text.isNotBlank()) {
+            builder.buttonTitle(viewBinding.shippingAddressButtonTitle.text.toString())
+        }
+        addressLauncher.present(
+            configuration = builder.build()
+        )
+    }
+
     private fun configureCustomCheckout() {
         val clientSecret = viewModel.clientSecret.value ?: return
 
@@ -438,6 +496,31 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         }
 
         viewModel.status.value = paymentResult.toString()
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun onAddressLauncherResult(addressLauncherResult: AddressLauncherResult) {
+        window.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
+        )
+        viewBinding.shippingAddressContainer.visibility = View.VISIBLE
+        when (addressLauncherResult) {
+            is AddressLauncherResult.Succeeded -> {
+                val address = addressLauncherResult.address
+                viewBinding.shippingAddressName.text = address.name
+                viewBinding.shippingAddressDetails.text =
+                    "${address.line1}\n${address.city}, ${address.state}, ${address.country}"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    viewBinding.playground.scrollToDescendant(viewBinding.shippingAddressDetails)
+                }
+            }
+            is AddressLauncherResult.Failed -> {
+                viewBinding.shippingAddressDetails.text = addressLauncherResult.toString()
+            }
+            is AddressLauncherResult.Canceled -> {
+                viewBinding.shippingAddressContainer.visibility = View.GONE
+            }
+        }
     }
 
     /**
