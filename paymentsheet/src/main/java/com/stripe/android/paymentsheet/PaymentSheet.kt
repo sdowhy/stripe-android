@@ -126,6 +126,14 @@ class PaymentSheet internal constructor(
          */
         val defaultBillingDetails: BillingDetails? = null,
 
+
+        /**
+         * The shipping information for the customer.
+         *
+         * If set, PaymentSheet will pre-populate the form fields with the values provided.
+         */
+        val shippingDetails: AddressDetails? = null,
+
         /**
          * 🏗 Under construction
          * The shipping information for the customer.

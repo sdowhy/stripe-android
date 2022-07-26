@@ -106,7 +106,8 @@ internal class PaymentSheetViewModel @Inject internal constructor(
     linkPaymentLauncherFactory = linkPaymentLauncherFactory
 ) {
     private val confirmParamsFactory = ConfirmStripeIntentParamsFactory.createFactory(
-        args.clientSecret
+        args.clientSecret,
+        args.config
     )
 
     @VisibleForTesting

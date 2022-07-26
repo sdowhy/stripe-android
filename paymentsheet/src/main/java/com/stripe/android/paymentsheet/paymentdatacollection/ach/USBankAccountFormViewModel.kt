@@ -33,6 +33,7 @@ import com.stripe.android.paymentsheet.model.SetupIntentClientSecret
 import com.stripe.android.paymentsheet.paymentdatacollection.FormFragmentArguments
 import com.stripe.android.paymentsheet.paymentdatacollection.ach.di.DaggerUSBankAccountFormComponent
 import com.stripe.android.paymentsheet.paymentdatacollection.ach.di.USBankAccountFormViewModelSubcomponent
+import com.stripe.android.paymentsheet.viewmodels.BaseSheetViewModel
 import com.stripe.android.ui.core.elements.SaveForFutureUseElement
 import com.stripe.android.ui.core.elements.SaveForFutureUseSpec
 import com.stripe.android.ui.core.elements.SimpleTextFieldController
@@ -410,7 +411,8 @@ internal class USBankAccountFormViewModel @Inject internal constructor(
     private fun confirm(clientSecret: ClientSecret, paymentSelection: PaymentSelection.New) {
         viewModelScope.launch {
             val confirmParamsFactory = ConfirmStripeIntentParamsFactory.createFactory(
-                clientSecret
+                clientSecret,
+                args.sheetViewModel?.config
             )
             val confirmIntent = confirmParamsFactory.create(paymentSelection)
             _currentScreenState.update {
@@ -496,6 +498,7 @@ internal class USBankAccountFormViewModel @Inject internal constructor(
      * @param clientSecret The client secret for the Stripe Intent being processed
      */
     data class Args(
+        val sheetViewModel: BaseSheetViewModel<*>?,
         val formArgs: FormFragmentArguments,
         val completePayment: Boolean,
         val clientSecret: ClientSecret?,

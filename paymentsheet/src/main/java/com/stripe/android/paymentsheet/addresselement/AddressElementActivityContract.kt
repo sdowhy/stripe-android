@@ -11,7 +11,7 @@ import com.stripe.android.view.ActivityStarter
 import kotlinx.parcelize.Parcelize
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-internal class AddressElementActivityContract :
+class AddressElementActivityContract :
     ActivityResultContract<AddressElementActivityContract.Args, AddressLauncherResult>() {
 
     override fun createIntent(context: Context, input: Args) =

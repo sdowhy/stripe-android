@@ -6,6 +6,8 @@ import com.stripe.android.model.ConfirmStripeIntentParams
 import com.stripe.android.model.MandateDataParams
 import com.stripe.android.model.PaymentMethod
 import com.stripe.android.model.PaymentMethodOptionsParams
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.addresselement.toConfirmPaymentIntentShipping
 
 /**
  * Factory class for creating [ConfirmPaymentIntentParams] or [ConfirmSetupIntentParams].
@@ -17,16 +19,21 @@ internal sealed class ConfirmStripeIntentParamsFactory<out T : ConfirmStripeInte
     abstract fun create(paymentSelection: PaymentSelection.New): T
 
     companion object {
-        fun createFactory(clientSecret: ClientSecret) =
+        fun createFactory(clientSecret: ClientSecret, configuration: PaymentSheet.Configuration?) =
             when (clientSecret) {
-                is PaymentIntentClientSecret -> ConfirmPaymentIntentParamsFactory(clientSecret)
-                is SetupIntentClientSecret -> ConfirmSetupIntentParamsFactory(clientSecret)
+                is PaymentIntentClientSecret -> {
+                    ConfirmPaymentIntentParamsFactory(clientSecret, configuration)
+                }
+                is SetupIntentClientSecret -> {
+                    ConfirmSetupIntentParamsFactory(clientSecret)
+                }
             }
     }
 }
 
 internal class ConfirmPaymentIntentParamsFactory(
-    private val clientSecret: ClientSecret
+    private val clientSecret: ClientSecret,
+    private val configuration: PaymentSheet.Configuration?
 ) : ConfirmStripeIntentParamsFactory<ConfirmPaymentIntentParams>() {
     override fun create(paymentSelection: PaymentSelection.Saved) =
         ConfirmPaymentIntentParams.createWithPaymentMethodId(
@@ -48,7 +55,8 @@ internal class ConfirmPaymentIntentParamsFactory(
                 }
             },
             mandateData = MandateDataParams(MandateDataParams.Type.Online.DEFAULT)
-                .takeIf { paymentSelection.paymentMethod.type?.requiresMandate == true }
+                .takeIf { paymentSelection.paymentMethod.type?.requiresMandate == true },
+            shipping = configuration?.shippingDetails?.toConfirmPaymentIntentShipping()
         )
 
     override fun create(paymentSelection: PaymentSelection.New) =
@@ -95,7 +103,8 @@ internal class ConfirmPaymentIntentParamsFactory(
                         setupFutureUsage = null
                     )
                 }
-            }
+            },
+            shipping = configuration?.shippingDetails?.toConfirmPaymentIntentShipping()
         )
 }
 
