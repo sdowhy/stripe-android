@@ -66,6 +66,9 @@ open class AddressElement constructor(
         .map { fields ->
             fields.forEach { field ->
                 field.setRawValue(rawValuesMap)
+                if (addressType is AddressType.ShippingExpanded) {
+                    rawValuesMap = emptyMap()
+                }
             }
             fields
         }

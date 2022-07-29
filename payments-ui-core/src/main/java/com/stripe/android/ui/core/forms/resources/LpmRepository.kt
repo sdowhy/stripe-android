@@ -66,7 +66,7 @@ class LpmRepository constructor(
     fun isLoaded() = serverInitializedLatch.count <= 0L
 
     fun waitUntilLoaded() {
-        serverInitializedLatch.await(20, TimeUnit.SECONDS)
+        serverInitializedLatch.await(1, TimeUnit.SECONDS)
     }
 
     /**
