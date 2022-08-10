@@ -45,7 +45,7 @@
     <string name="shipping_address_partial_countries">Partial</string>
     <string name="allowsDelayedPaymentMethods">Delayed PMs</string>
     <string name="automatic_pm">Automatic PMs</string>
-    <string name="reset_defaults">Reset Defaults</string>
+    <string name="reset">Reset</string>
     <string name="confirm">confirm</string>
     <string name="currency_usd">USD</string>
     <string name="currency_eur">EUR</string>
