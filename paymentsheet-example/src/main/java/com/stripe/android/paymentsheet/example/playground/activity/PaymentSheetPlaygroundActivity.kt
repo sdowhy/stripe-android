@@ -1,10 +1,7 @@
 package com.stripe.android.paymentsheet.example.playground.activity
 
-import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.view.WindowManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.annotation.NonNull
@@ -24,7 +21,6 @@ import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.addresselement.AddressDetails
 import com.stripe.android.paymentsheet.addresselement.AddressLauncher
-import com.stripe.android.paymentsheet.addresselement.AddressLauncherResult
 import com.stripe.android.paymentsheet.example.R
 import com.stripe.android.paymentsheet.example.Settings
 import com.stripe.android.paymentsheet.example.databinding.ActivityPaymentSheetPlaygroundBinding
@@ -114,7 +110,7 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
     private lateinit var paymentSheet: PaymentSheet
     private lateinit var flowController: PaymentSheet.FlowController
     private lateinit var addressLauncher: AddressLauncher
-    private var shippingAddress: AddressDetails? = null
+    private var shippingDetails: AddressDetails? = null
 
     @Nullable
     private var multiStepUIReadyIdlingResource: CountingIdlingResource? = null
@@ -142,7 +138,9 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
             ::onPaymentOption,
             ::onPaymentSheetResult
         )
-        addressLauncher = AddressLauncher(this, ::onAddressLauncherResult)
+
+        // TODO: Create an instance of the AddressLauncher and handle its results
+        // TODO: When handling the results of AddressLauncher, capture the shippingDetails
 
         viewBinding.currencySpinner.adapter =
             ArrayAdapter(
@@ -376,61 +374,16 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
     }
 
     private fun startShippingAddressCollection() {
+        // TODO: Use the builder to add configuration details for the Address Element
         val builder = AddressLauncher.Configuration.Builder()
+
+        // TODO: Place your Google Places API key in your gradle.properties or use it here directly
         builder.googlePlacesApiKey(settings.googlePlacesApiKey)
-        if (viewBinding.shippingAddressDefaultRadioGroup.checkedRadioButtonId ==
-            viewBinding.shippingAddressDefaultOnButton.id) {
-            builder.defaultValues(
-                AddressLauncher.DefaultAddressDetails(
-                    name = "Theo Parker",
-                    address = PaymentSheet.Address(
-                        city = "South San Francisco",
-                        country = "United States",
-                        line1 = "354 Oyster Point Blvd",
-                        state = "CA",
-                        postalCode = "94080",
-                    ),
-                    phoneNumber = "5555555555",
-                    isCheckboxSelected = true
-                )
-            )
-        }
-        if (viewBinding.shippingAddressCountriesGroup.checkedRadioButtonId ==
-            viewBinding.shippingAddressCountriesPartialButton.id) {
-            builder.allowedCountries(
-                setOf("US", "CA", "AU", "GB", "FR", "JP", "KR")
-            )
-        }
-        val phone = when (viewBinding.shippingAddressPhoneRadioGroup.checkedRadioButtonId) {
-            viewBinding.shippingAddressPhoneRequiredButton.id -> {
-                AddressLauncher.AdditionalFieldsConfiguration.FieldConfiguration.REQUIRED
-            }
-            viewBinding.shippingAddressPhoneOptionalButton.id -> {
-                AddressLauncher.AdditionalFieldsConfiguration.FieldConfiguration.OPTIONAL
-            }
-            viewBinding.shippingAddressPhoneHiddenButton.id -> {
-                AddressLauncher.AdditionalFieldsConfiguration.FieldConfiguration.HIDDEN
-            }
-            else -> {
-                AddressLauncher.AdditionalFieldsConfiguration.FieldConfiguration.OPTIONAL
-            }
-        }
-        val checkboxLabel = if (viewBinding.shippingAddressCheckboxLabel.text.isNotBlank()) {
-            viewBinding.shippingAddressCheckboxLabel.text.toString()
-        } else {
-            getString(R.string.stripe_paymentsheet_address_element_same_as_shipping)
-        }
-        builder.additionalFields = AddressLauncher.AdditionalFieldsConfiguration(
-            phone = phone,
-            checkboxLabel = checkboxLabel
-        )
-        if (viewBinding.shippingAddressButtonTitle.text.isNotBlank()) {
-            builder.buttonTitle(viewBinding.shippingAddressButtonTitle.text.toString())
-        }
-        addressLauncher.present(
-            publishableKey = PaymentConfiguration.getInstance(this).publishableKey,
-            configuration = builder.build()
-        )
+
+        val configuration = builder.build()
+        val publishableKey = PaymentConfiguration.getInstance(this).publishableKey
+
+        // TODO: Launch the Address Element with the configuration and publishable key
     }
 
     private fun configureCustomCheckout() {
@@ -477,7 +430,7 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
             customer = viewModel.customerConfig.value,
             googlePay = googlePayConfig,
             defaultBillingDetails = defaultBilling,
-            shippingDetails = shippingAddress,
+            shippingDetails = null, // TODO: Capture shippingDetails and use it here
             allowsDelayedPaymentMethods = viewBinding.allowsDelayedPaymentMethodsOnButton.isChecked,
             appearance = appearance
         )
@@ -517,30 +470,6 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         }
 
         viewModel.status.value = paymentResult.toString()
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun onAddressLauncherResult(addressLauncherResult: AddressLauncherResult) {
-        window.setSoftInputMode(
-            WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
-        )
-        viewBinding.shippingAddressContainer.visibility = View.VISIBLE
-        when (addressLauncherResult) {
-            is AddressLauncherResult.Succeeded -> {
-                shippingAddress = addressLauncherResult.address
-                val address = addressLauncherResult.address.address
-                viewBinding.shippingAddressName.text = addressLauncherResult.address.name
-                viewBinding.shippingAddressDetails.text = address?.let {
-                    "${address.line1}\n${address.city}, ${address.state}, ${address.country}"
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    viewBinding.playground.scrollToDescendant(viewBinding.shippingAddressDetails)
-                }
-            }
-            is AddressLauncherResult.Canceled -> {
-                viewBinding.shippingAddressContainer.visibility = View.GONE
-            }
-        }
     }
 
     /**
