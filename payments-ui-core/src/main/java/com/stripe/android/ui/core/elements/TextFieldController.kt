@@ -3,6 +3,8 @@ package com.stripe.android.ui.core.elements
 import androidx.annotation.DrawableRes
 import androidx.annotation.RestrictTo
 import androidx.annotation.StringRes
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
@@ -13,11 +15,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
+@OptIn(ExperimentalComposeUiApi::class)
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)
 interface TextFieldController : InputController {
     fun onValueChange(displayFormatted: String): TextFieldState?
     fun onFocusChange(newHasFocus: Boolean)
 
+    val autofillTypes: List<AutofillType>
     val debugLabel: String
     val trailingIcon: Flow<TextFieldIcon?>
     val capitalization: KeyboardCapitalization
@@ -79,6 +83,17 @@ class SimpleTextFieldController constructor(
 
     override val label: Flow<Int> = MutableStateFlow(textFieldConfig.label)
     override val debugLabel = textFieldConfig.debugLabel
+    @OptIn(ExperimentalComposeUiApi::class)
+    override val autofillTypes: List<AutofillType> = when (textFieldConfig) {
+        is DateConfig -> listOf(AutofillType.CreditCardExpirationDate)
+        is PostalCodeConfig -> listOf(
+            AutofillType.PostalCode,
+            AutofillType.PostalCodeExtended
+        )
+        is EmailConfig -> listOf(AutofillType.EmailAddress)
+        is NameConfig -> listOf(AutofillType.PersonFullName)
+        else -> listOf()
+    }
 
     /** This is all the information that can be observed on the element */
     private val _fieldValue = MutableStateFlow("")
