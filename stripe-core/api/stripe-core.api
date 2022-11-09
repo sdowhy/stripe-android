@@ -128,6 +128,14 @@ public abstract class com/stripe/android/core/exception/StripeException : java/l
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/stripe/android/core/injection/CoreCommonModule_BindsTimeProviderFactory : dagger/internal/Factory {
+	public fun <init> (Lcom/stripe/android/core/injection/CoreCommonModule;Ljavax/inject/Provider;)V
+	public static fun bindsTimeProvider (Lcom/stripe/android/core/injection/CoreCommonModule;Lcom/stripe/android/core/utils/DefaultTimeProvider;)Lcom/stripe/android/core/utils/TimeProvider;
+	public static fun create (Lcom/stripe/android/core/injection/CoreCommonModule;Ljavax/inject/Provider;)Lcom/stripe/android/core/injection/CoreCommonModule_BindsTimeProviderFactory;
+	public fun get ()Lcom/stripe/android/core/utils/TimeProvider;
+	public synthetic fun get ()Ljava/lang/Object;
+}
+
 public final class com/stripe/android/core/injection/CoreCommonModule_ProvideLocaleFactory : dagger/internal/Factory {
 	public fun <init> (Lcom/stripe/android/core/injection/CoreCommonModule;)V
 	public static fun create (Lcom/stripe/android/core/injection/CoreCommonModule;)Lcom/stripe/android/core/injection/CoreCommonModule_ProvideLocaleFactory;
@@ -307,6 +315,18 @@ public final class com/stripe/android/core/networking/JsonUtilsKt {
 public final class com/stripe/android/core/networking/NetworkConstantsKt {
 }
 
+public final class com/stripe/android/core/networking/RequestId$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/stripe/android/core/networking/RequestId$$serializer;
+	public static final synthetic field descriptor Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/stripe/android/core/networking/RequestId;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/stripe/android/core/networking/RequestId;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
 public final class com/stripe/android/core/networking/ResponseJsonKt {
 }
 
@@ -345,6 +365,35 @@ public final class com/stripe/android/core/networking/StripeRequest$MimeType : j
 	public fun toString ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/stripe/android/core/networking/StripeRequest$MimeType;
 	public static fun values ()[Lcom/stripe/android/core/networking/StripeRequest$MimeType;
+}
+
+public final class com/stripe/android/core/networking/StripeResponse$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public final synthetic field descriptor Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public synthetic fun <init> (Lkotlinx/serialization/KSerializer;)V
+	public fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/stripe/android/core/networking/StripeResponse;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/stripe/android/core/networking/StripeResponse;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/stripe/android/core/utils/DefaultTimeProvider : com/stripe/android/core/utils/TimeProvider {
+	public fun <init> ()V
+	public fun currentTimeInMillis ()J
+}
+
+public final class com/stripe/android/core/utils/DefaultTimeProvider_Factory : dagger/internal/Factory {
+	public fun <init> ()V
+	public static fun create ()Lcom/stripe/android/core/utils/DefaultTimeProvider_Factory;
+	public fun get ()Lcom/stripe/android/core/utils/DefaultTimeProvider;
+	public synthetic fun get ()Ljava/lang/Object;
+	public static fun newInstance ()Lcom/stripe/android/core/utils/DefaultTimeProvider;
+}
+
+public abstract interface class com/stripe/android/core/utils/TimeProvider {
+	public abstract fun currentTimeInMillis ()J
 }
 
 public final class com/stripe/android/core/version/StripeSdkVersion {

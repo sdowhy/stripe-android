@@ -32,7 +32,7 @@ class StripeConnectionTest {
         val expectedStringValue = "test input stream value"
         whenever(mockConnection.inputStream).thenReturn(ByteArrayInputStream(expectedStringValue.toByteArray()))
 
-        val connection = StripeConnection.Default(mockConnection)
+        val connection = StripeConnection.Default(mock())
 
         assertThat(connection.response.body).isEqualTo(expectedStringValue)
     }
@@ -51,7 +51,7 @@ class StripeConnectionTest {
             outputFile.delete()
         }
 
-        val connection = StripeConnection.FileConnection(mockConnection, outputFile)
+        val connection = StripeConnection.FileConnection(mock(), outputFile)
         assertThat(connection.response.body).isSameInstanceAs(outputFile)
         assertThat(FileReader(outputFile).readText()).isEqualTo(expectedFileContent)
     }

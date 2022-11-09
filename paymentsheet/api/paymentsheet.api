@@ -1543,14 +1543,6 @@ public final class com/stripe/android/paymentsheet/paymentdatacollection/polling
 	public final fun getLambda-8$paymentsheet_release ()Lkotlin/jvm/functions/Function2;
 }
 
-public final class com/stripe/android/paymentsheet/paymentdatacollection/polling/DefaultTimeProvider_Factory : dagger/internal/Factory {
-	public fun <init> ()V
-	public static fun create ()Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/DefaultTimeProvider_Factory;
-	public fun get ()Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/DefaultTimeProvider;
-	public synthetic fun get ()Ljava/lang/Object;
-	public static fun newInstance ()Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/DefaultTimeProvider;
-}
-
 public final class com/stripe/android/paymentsheet/paymentdatacollection/polling/PollingContract$Args$Creator : android/os/Parcelable$Creator {
 	public fun <init> ()V
 	public final fun createFromParcel (Landroid/os/Parcel;)Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingContract$Args;
@@ -1564,7 +1556,7 @@ public final class com/stripe/android/paymentsheet/paymentdatacollection/polling
 	public static fun create (Ljavax/inject/Provider;Ljavax/inject/Provider;Ljavax/inject/Provider;Ljavax/inject/Provider;Ljavax/inject/Provider;)Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel_Factory;
 	public fun get ()Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel;
 	public synthetic fun get ()Ljava/lang/Object;
-	public static fun newInstance (Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel$Args;Lcom/stripe/android/polling/IntentStatusPoller;Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/TimeProvider;Lkotlinx/coroutines/CoroutineDispatcher;Landroidx/lifecycle/SavedStateHandle;)Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel;
+	public static fun newInstance (Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel$Args;Lcom/stripe/android/polling/IntentStatusPoller;Lcom/stripe/android/core/utils/TimeProvider;Lkotlinx/coroutines/CoroutineDispatcher;Landroidx/lifecycle/SavedStateHandle;)Lcom/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel;
 }
 
 public final class com/stripe/android/paymentsheet/paymentdatacollection/polling/PollingViewModel_Factory_MembersInjector : dagger/MembersInjector {

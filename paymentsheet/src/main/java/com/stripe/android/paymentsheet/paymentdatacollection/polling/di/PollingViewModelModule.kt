@@ -7,8 +7,6 @@ import com.stripe.android.core.injection.ENABLE_LOGGING
 import com.stripe.android.core.injection.PUBLISHABLE_KEY
 import com.stripe.android.payments.core.injection.PRODUCT_USAGE
 import com.stripe.android.paymentsheet.BuildConfig
-import com.stripe.android.paymentsheet.paymentdatacollection.polling.DefaultTimeProvider
-import com.stripe.android.paymentsheet.paymentdatacollection.polling.TimeProvider
 import com.stripe.android.polling.DefaultIntentStatusPoller
 import com.stripe.android.polling.IntentStatusPoller
 import dagger.Binds
@@ -21,9 +19,6 @@ internal interface PollingViewModelModule {
 
     @Binds
     fun bindsIntentStatusPoller(impl: DefaultIntentStatusPoller): IntentStatusPoller
-
-    @Binds
-    fun bindsTimeProvider(impl: DefaultTimeProvider): TimeProvider
 
     companion object {
 

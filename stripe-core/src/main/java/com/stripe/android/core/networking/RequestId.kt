@@ -8,6 +8,7 @@ import androidx.annotation.RestrictTo
  * See https://stripe.com/docs/api/request_ids
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+@kotlinx.serialization.Serializable
 data class RequestId(
     val value: String
 ) {

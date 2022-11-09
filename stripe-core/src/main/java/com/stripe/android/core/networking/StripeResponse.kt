@@ -15,6 +15,7 @@ import java.net.HttpURLConnection.HTTP_MULT_CHOICE
  * @param headers any headers associated with the response
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+@kotlinx.serialization.Serializable
 data class StripeResponse<ResponseBody>(
     /**
      * the response code
@@ -27,7 +28,9 @@ data class StripeResponse<ResponseBody>(
     /**
      * the response headers
      */
-    val headers: Map<String, List<String>> = emptyMap()
+    val headers: Map<String, List<String>> = emptyMap(),
+
+    var timestamp: Long = System.currentTimeMillis()
 ) {
     val isOk: Boolean = code == HttpURLConnection.HTTP_OK
     val isError: Boolean = code < HttpURLConnection.HTTP_OK || code >= HTTP_MULT_CHOICE

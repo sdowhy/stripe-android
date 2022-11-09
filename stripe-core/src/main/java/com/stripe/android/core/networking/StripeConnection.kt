@@ -1,5 +1,6 @@
 package com.stripe.android.core.networking
 
+import android.net.http.HttpResponseCache
 import androidx.annotation.RestrictTo
 import java.io.Closeable
 import java.io.File
@@ -7,6 +8,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.Scanner
 
@@ -69,7 +71,6 @@ interface StripeConnection<ResponseBodyType> : Closeable {
     class Default internal constructor(
         conn: HttpURLConnection
     ) : AbstractConnection<String>(conn = conn) {
-
         /**
          * Convert stream to a String
          */

@@ -1,6 +1,7 @@
 package com.stripe.android.networking
 
 import android.content.Context
+import android.net.http.HttpResponseCache
 import androidx.annotation.RestrictTo
 import androidx.annotation.VisibleForTesting
 import com.stripe.android.DefaultFraudDetectionDataRepository
@@ -36,6 +37,8 @@ import com.stripe.android.core.networking.HTTP_TOO_MANY_REQUESTS
 import com.stripe.android.core.networking.RequestId
 import com.stripe.android.core.networking.StripeNetworkClient
 import com.stripe.android.core.networking.StripeResponse
+import com.stripe.android.core.networking.cache.DefaultNetworkCache
+import com.stripe.android.core.networking.cache.NetworkCache
 import com.stripe.android.core.networking.responseJson
 import com.stripe.android.core.version.StripeSdkVersion
 import com.stripe.android.exception.CardException
@@ -92,6 +95,7 @@ import com.stripe.android.payments.core.injection.PRODUCT_USAGE
 import com.stripe.android.utils.StripeUrlUtils
 import kotlinx.coroutines.Dispatchers
 import org.json.JSONException
+import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.security.Security
@@ -124,7 +128,8 @@ class StripeApiRepository @JvmOverloads internal constructor(
     private val fraudDetectionDataParamsUtils: FraudDetectionDataParamsUtils = FraudDetectionDataParamsUtils(),
     betas: Set<StripeApiBeta> = emptySet(),
     apiVersion: String = ApiVersion(betas = betas.map { it.code }.toSet()).code,
-    sdkVersion: String = StripeSdkVersion.VERSION
+    sdkVersion: String = StripeSdkVersion.VERSION,
+    private val networkCache: NetworkCache = DefaultNetworkCache(context)
 ) : StripeRepository() {
 
     @Inject
@@ -157,6 +162,15 @@ class StripeApiRepository @JvmOverloads internal constructor(
 
     init {
         fireFraudDetectionDataRequest()
+        try {
+            val httpCacheDir = File(context.cacheDir, "http")
+            val httpCacheSize = (10 * 1024 * 1024).toLong() // 10 MiB
+            HttpResponseCache.install(httpCacheDir, httpCacheSize)
+        } catch (e: IOException) {
+            logger.info(
+                "HTTP response cache installation failed:$e"
+            )
+        }
     }
 
     override suspend fun retrieveStripeIntent(
@@ -1770,7 +1784,7 @@ class StripeApiRepository @JvmOverloads internal constructor(
     private suspend fun <ModelType : StripeModel> fetchStripeModel(
         apiRequest: ApiRequest,
         jsonParser: ModelJsonParser<ModelType>,
-        onResponse: () -> Unit
+        onResponse: (StripeResponse<String>?) -> Unit
     ): ModelType? {
         return jsonParser.parse(makeApiRequest(apiRequest, onResponse).responseJson())
     }
@@ -1785,14 +1799,14 @@ class StripeApiRepository @JvmOverloads internal constructor(
     )
     internal suspend fun makeApiRequest(
         apiRequest: ApiRequest,
-        onResponse: () -> Unit
+        onResponse: (StripeResponse<String>?) -> Unit
     ): StripeResponse<String> {
         val dnsCacheData = disableDnsCache()
 
         val response = runCatching {
             stripeNetworkClient.executeRequest(apiRequest)
         }.also {
-            onResponse()
+            onResponse(it.getOrNull())
         }.getOrElse {
             throw when (it) {
                 is IOException -> APIConnectionException.create(it, apiRequest.baseUrl)

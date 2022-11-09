@@ -2,7 +2,6 @@ package com.stripe.android.paymentsheet.paymentdatacollection.polling
 
 import android.app.Application
 import android.os.Bundle
-import android.os.SystemClock
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -13,6 +12,7 @@ import com.stripe.android.core.injection.Injectable
 import com.stripe.android.core.injection.Injector
 import com.stripe.android.core.injection.InjectorKey
 import com.stripe.android.core.injection.injectWithFallback
+import com.stripe.android.core.utils.TimeProvider
 import com.stripe.android.model.StripeIntent
 import com.stripe.android.paymentsheet.paymentdatacollection.polling.di.DaggerPollingComponent
 import com.stripe.android.paymentsheet.paymentdatacollection.polling.di.PollingViewModelSubcomponent
@@ -35,16 +35,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 private const val KEY_CURRENT_POLLING_START_TIME = "KEY_CURRENT_POLLING_START_TIME"
-
-internal interface TimeProvider {
-    fun currentTimeInMillis(): Long
-}
-
-internal class DefaultTimeProvider @Inject constructor() : TimeProvider {
-    override fun currentTimeInMillis(): Long {
-        return SystemClock.elapsedRealtime()
-    }
-}
 
 internal enum class PollingState {
     Active,
