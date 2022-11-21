@@ -1,10 +1,14 @@
 package com.stripe.android.link.model
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.asFlow
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.stripe.android.link.LinkActivityResult
 import com.stripe.android.link.LinkActivityResult.Canceled.Reason.BackPressed
 import com.stripe.android.link.LinkScreen
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,10 +17,24 @@ import javax.inject.Singleton
  */
 @Singleton
 internal class Navigator @Inject constructor() {
-    var userNavigationEnabled = true
-    var launchedDirectly = false
+
+    private var launchedDirectly = false
+    private var onDismiss: (LinkActivityResult) -> Unit = {}
+
+    @VisibleForTesting
     var navigationController: NavHostController? = null
-    var onDismiss: ((LinkActivityResult) -> Unit)? = null
+
+    var userNavigationEnabled = true
+
+    fun attach(
+        navigationController: NavHostController,
+        launchedDirectly: Boolean,
+        onDismiss: (LinkActivityResult) -> Unit,
+    ) {
+        this.navigationController = navigationController
+        this.launchedDirectly = launchedDirectly
+        this.onDismiss = onDismiss
+    }
 
     /**
      * Navigates to the given [LinkScreen], optionally clearing the back stack.
@@ -24,21 +42,29 @@ internal class Navigator @Inject constructor() {
     fun navigateTo(
         target: LinkScreen,
         clearBackStack: Boolean = false
-    ) = navigationController?.let { navController ->
-        navController.navigate(target.route) {
-            if (clearBackStack) {
-                popUpTo(navController.backQueue.first().destination.id) {
-                    inclusive = true
+    ) {
+        navigationController?.let { navController ->
+            navController.navigate(target.route) {
+                if (clearBackStack) {
+                    popUpTo(navController.backQueue.first().destination.id) {
+                        inclusive = true
+                    }
                 }
             }
         }
     }
 
-    fun setResult(key: String, value: Any) =
+    fun setResult(key: String, value: Any) {
         navigationController?.previousBackStackEntry?.savedStateHandle?.set(key, value)
+    }
 
-    fun <T> getResultFlow(key: String) =
-        navigationController?.currentBackStackEntry?.savedStateHandle?.getLiveData<T>(key)?.asFlow()
+    fun <T> getResultFlow(key: String): Flow<T>? {
+        return navigationController
+            ?.currentBackStackEntry
+            ?.savedStateHandle
+            ?.getLiveData<T>(key)
+            ?.asFlow()
+    }
 
     /**
      * Behaves like a back button, popping the back stack and dismissing the Activity if this was
@@ -57,21 +83,37 @@ internal class Navigator @Inject constructor() {
         }
     }
 
-    /**
-     * Dismisses the Link Activity with the given [result].
-     */
-    fun dismiss(result: LinkActivityResult) = onDismiss?.invoke(result)
+    fun complete() {
+        onDismiss(LinkActivityResult.Completed(launchedDirectly))
+    }
 
-    /**
-     * Cancels the Link Activity with the given [reason].
-     */
     fun cancel(reason: LinkActivityResult.Canceled.Reason) {
         dismiss(LinkActivityResult.Canceled(reason, launchedDirectly))
     }
 
-    fun isOnRootScreen() = navigationController?.isOnRootScreen()
+    fun fail(error: Throwable) {
+        onDismiss(
+            LinkActivityResult.Failed(
+                error = error,
+                launchedDirectly = launchedDirectly,
+            )
+        )
+    }
+
+    private fun dismiss(result: LinkActivityResult) {
+        onDismiss(result)
+    }
+
+    fun isOnRootScreen(): Boolean? = navigationController?.isOnRootScreen
 }
 
-// The Loading screen is always at the bottom of the stack, so a size of 2 means the current
-// screen is at the bottom of the navigation stack.
-fun NavHostController.isOnRootScreen() = backQueue.size <= 2
+
+internal val NavController.rootScreenFlow: Flow<Boolean>
+    // The Loading screen is always at the bottom of the stack, so a size of 2 means the current
+    // screen is at the bottom of the navigation stack.
+    get() = currentBackStackEntryFlow.map { this.isOnRootScreen }
+
+private val NavController.isOnRootScreen: Boolean
+    // The Loading screen is always at the bottom of the stack, so a size of 2 means the current
+    // screen is at the bottom of the navigation stack.
+    get() = backQueue.size <= 2

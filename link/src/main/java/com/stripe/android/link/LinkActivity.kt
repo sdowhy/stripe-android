@@ -21,6 +21,7 @@ import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,7 +40,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.stripe.android.link.model.AccountStatus
-import com.stripe.android.link.model.isOnRootScreen
+import com.stripe.android.link.model.rootScreenFlow
 import com.stripe.android.link.theme.DefaultLinkTheme
 import com.stripe.android.link.theme.linkColors
 import com.stripe.android.link.theme.linkShapes
@@ -53,7 +53,6 @@ import com.stripe.android.link.ui.signup.SignUpBody
 import com.stripe.android.link.ui.verification.VerificationBodyFullFlow
 import com.stripe.android.link.ui.wallet.WalletBody
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -64,9 +63,6 @@ internal class LinkActivity : ComponentActivity() {
     }
 
     private val viewModel: LinkActivityViewModel by viewModels { viewModelFactory }
-
-    @VisibleForTesting
-    lateinit var navController: NavHostController
 
     private val starterArgs by lazy {
         requireNotNull(LinkActivityContract.Args.fromIntent(intent))
@@ -105,13 +101,21 @@ internal class LinkActivity : ComponentActivity() {
                     ),
                     scrimColor = MaterialTheme.linkColors.sheetScrim
                 ) {
-                    navController = rememberNavController()
+                    val navController = rememberNavController()
 
-                    viewModel.navigator.navigationController = navController
+                    LaunchedEffect(Unit) {
+                        viewModel.navigator.attach(
+                            navigationController = navController,
+                            launchedDirectly = starterArgs.launchedDirectly,
+                            onDismiss = this@LinkActivity::dismiss,
+                        )
+
+                        viewModel.navigateToInitialScreen()
+                    }
 
                     Column(Modifier.fillMaxWidth()) {
                         val linkAccount by viewModel.linkAccount.collectAsState(null)
-                        val isOnRootScreen by isRootScreenFlow().collectAsState(true)
+                        val isOnRootScreen by navController.rootScreenFlow.collectAsState(true)
                         val backStackEntry by navController.currentBackStackEntryAsState()
                         val appBarState = rememberLinkAppBarState(
                             isRootScreen = isOnRootScreen,
@@ -224,33 +228,7 @@ internal class LinkActivity : ComponentActivity() {
             }
         }
 
-        viewModel.navigator.onDismiss = ::dismiss
-        viewModel.navigator.launchedDirectly = starterArgs.launchedDirectly
         viewModel.setupPaymentLauncher(this)
-
-        // Navigate to the initial screen once the view has been laid out.
-        window.decorView.rootView.viewTreeObserver.addOnGlobalLayoutListener(
-            object : ViewTreeObserver.OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-                    lifecycleScope.launch {
-                        viewModel.navigator.navigateTo(
-                            target = when (viewModel.linkAccountManager.accountStatus.first()) {
-                                AccountStatus.Verified ->
-                                    LinkScreen.Wallet
-                                AccountStatus.NeedsVerification,
-                                AccountStatus.VerificationStarted ->
-                                    LinkScreen.Verification
-                                AccountStatus.SignedOut,
-                                AccountStatus.Error ->
-                                    LinkScreen.SignUp
-                            },
-                            clearBackStack = true
-                        )
-                    }
-                    window.decorView.rootView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                }
-            }
-        )
     }
 
     override fun onDestroy() {
@@ -268,7 +246,4 @@ internal class LinkActivity : ComponentActivity() {
         setResult(result.resultCode, intent)
         finish()
     }
-
-    private fun isRootScreenFlow() =
-        navController.currentBackStackEntryFlow.map { navController.isOnRootScreen() }
 }

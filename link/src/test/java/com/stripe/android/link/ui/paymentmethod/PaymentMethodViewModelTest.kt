@@ -11,7 +11,6 @@ import com.stripe.android.core.injection.NonFallbackInjector
 import com.stripe.android.financialconnections.launcher.FinancialConnectionsSheetLinkResult
 import com.stripe.android.financialconnections.model.FinancialConnectionsAccount
 import com.stripe.android.link.LinkActivityContract
-import com.stripe.android.link.LinkActivityResult
 import com.stripe.android.link.LinkActivityResult.Canceled.Reason
 import com.stripe.android.link.LinkPaymentDetails
 import com.stripe.android.link.LinkScreen
@@ -257,7 +256,7 @@ class PaymentMethodViewModelTest {
 
         advanceTimeBy(PrimaryButtonState.COMPLETED_DELAY_MS + 1)
 
-        verify(navigator).dismiss(LinkActivityResult.Completed)
+        verify(navigator).complete()
     }
 
     @Test

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.activity.result.ActivityResultCaller
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.core.injection.Injectable
@@ -14,10 +15,13 @@ import com.stripe.android.link.LinkActivityResult.Canceled.Reason.LoggedOut
 import com.stripe.android.link.account.LinkAccountManager
 import com.stripe.android.link.confirmation.ConfirmationManager
 import com.stripe.android.link.injection.DaggerLinkViewModelFactoryComponent
+import com.stripe.android.link.model.AccountStatus
 import com.stripe.android.link.model.Navigator
 import com.stripe.android.model.PaymentIntent
 import com.stripe.android.model.StripeIntent
 import com.stripe.android.utils.requireApplication
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -40,6 +44,20 @@ internal class LinkActivityViewModel @Inject internal constructor(
 
     init {
         assertStripeIntentIsValid(args.stripeIntent)
+    }
+
+    fun navigateToInitialScreen() {
+        viewModelScope.launch {
+            val target = when (linkAccountManager.accountStatus.first()) {
+                AccountStatus.Verified -> LinkScreen.Wallet
+                AccountStatus.NeedsVerification,
+                AccountStatus.VerificationStarted -> LinkScreen.Verification
+                AccountStatus.SignedOut,
+                AccountStatus.Error -> LinkScreen.SignUp
+            }
+
+            navigator.navigateTo(target, clearBackStack = true)
+        }
     }
 
     fun setupPaymentLauncher(activityResultCaller: ActivityResultCaller) {
@@ -71,12 +89,7 @@ internal class LinkActivityViewModel @Inject internal constructor(
                 requireNotNull(stripeIntent.currency)
             }
         }.onFailure { error ->
-            navigator.dismiss(
-                LinkActivityResult.Failed(
-                    error = error,
-                    launchedDirectly = args.launchedDirectly,
-                )
-            )
+            navigator.fail(error)
         }
     }
 

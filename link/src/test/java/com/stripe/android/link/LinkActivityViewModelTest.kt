@@ -49,9 +49,10 @@ class LinkActivityViewModelTest {
     )
 
     private val defaultArgs = LinkActivityContract.Args(
-        config,
-        null,
-        LinkActivityContract.Args.InjectionParams(
+        configuration = config,
+        launchedDirectly = false,
+        prefilledCardParams = null,
+        injectionParams = LinkActivityContract.Args.InjectionParams(
             INJECTOR_KEY,
             setOf(PRODUCT_USAGE),
             true,
@@ -73,26 +74,26 @@ class LinkActivityViewModelTest {
         createViewModel(
             createArgs(StripeIntentFixtures.PI_SUCCEEDED.copy(clientSecret = null))
         )
-        verify(navigator).dismiss(argWhere { it is LinkActivityResult.Failed })
+        verify(navigator).fail(any())
 
         reset(navigator)
         createViewModel(
             createArgs(StripeIntentFixtures.PI_SUCCEEDED.copy(id = null))
         )
-        verify(navigator).dismiss(argWhere { it is LinkActivityResult.Failed })
+        verify(navigator).fail(any())
         reset(navigator)
 
         reset(navigator)
         createViewModel(
             createArgs(StripeIntentFixtures.PI_SUCCEEDED.copy(amount = null))
         )
-        verify(navigator).dismiss(argWhere { it is LinkActivityResult.Failed })
+        verify(navigator).fail(any())
 
         reset(navigator)
         createViewModel(
             createArgs(StripeIntentFixtures.PI_SUCCEEDED.copy(currency = null))
         )
-        verify(navigator).dismiss(argWhere { it is LinkActivityResult.Failed })
+        verify(navigator).fail(any())
     }
 
     @Test
@@ -157,7 +158,10 @@ class LinkActivityViewModelTest {
 
         viewModel.onBackPressed()
 
-        verify(navigator, never()).dismiss(any())
+        verify(navigator, never()).complete()
+        verify(navigator, never()).cancel(any())
+        verify(navigator, never()).fail(any())
+
         verify(linkAccountManager, never()).logout()
     }
 
@@ -168,7 +172,10 @@ class LinkActivityViewModelTest {
 
         viewModel.onBackPressed()
 
-        verify(navigator, never()).dismiss(any())
+        verify(navigator, never()).complete()
+        verify(navigator, never()).cancel(any())
+        verify(navigator, never()).fail(any())
+
         verify(linkAccountManager, never()).logout()
     }
 

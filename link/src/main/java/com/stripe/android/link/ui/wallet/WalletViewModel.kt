@@ -215,7 +215,7 @@ internal class WalletViewModel @Inject constructor(
             is PaymentResult.Completed -> {
                 viewModelScope.launch {
                     delay(PrimaryButtonState.COMPLETED_DELAY_MS)
-                    navigator.dismiss(LinkActivityResult.Completed(navigator.launchedDirectly))
+                    navigator.complete()
                 }
             }
         }
@@ -358,7 +358,7 @@ internal class WalletViewModel @Inject constructor(
 
     private fun onFatal(fatalError: Throwable) {
         logger.error("Fatal error: ", fatalError)
-        navigator.dismiss(LinkActivityResult.Failed(fatalError, navigator.launchedDirectly))
+        navigator.fail(fatalError)
     }
 
     internal class Factory(

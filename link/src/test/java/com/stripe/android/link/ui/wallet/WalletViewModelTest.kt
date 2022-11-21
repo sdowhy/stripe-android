@@ -11,7 +11,6 @@ import com.stripe.android.core.exception.APIConnectionException
 import com.stripe.android.core.injection.Injectable
 import com.stripe.android.core.injection.NonFallbackInjector
 import com.stripe.android.link.LinkActivityContract
-import com.stripe.android.link.LinkActivityResult
 import com.stripe.android.link.LinkActivityResult.Canceled.Reason
 import com.stripe.android.link.LinkScreen
 import com.stripe.android.link.account.LinkAccountManager
@@ -364,7 +363,7 @@ class WalletViewModelTest {
 
         advanceTimeBy(PrimaryButtonState.COMPLETED_DELAY_MS + 1)
 
-        verify(navigator).dismiss(LinkActivityResult.Completed)
+        verify(navigator).complete()
     }
 
     @Test
@@ -407,7 +406,7 @@ class WalletViewModelTest {
     @Test
     fun `On CardEdit result successful then it reloads payment details`() = runTest {
         val flow = MutableStateFlow<PaymentDetailsResult?>(null)
-        whenever(navigator.getResultFlow<PaymentDetailsResult>(any())).thenReturn(flow)
+        whenever(navigator.getResultFlow<PaymentDetailsResult?>(any())).thenReturn(flow)
 
         createViewModel()
         verify(linkAccountManager).listPaymentDetails()
@@ -420,7 +419,7 @@ class WalletViewModelTest {
     @Test
     fun `On CardEdit result failure then it shows error`() = runTest {
         val flow = MutableStateFlow<PaymentDetailsResult?>(null)
-        whenever(navigator.getResultFlow<PaymentDetailsResult>(any())).thenReturn(flow)
+        whenever(navigator.getResultFlow<PaymentDetailsResult?>(any())).thenReturn(flow)
 
         val viewModel = createViewModel()
 
