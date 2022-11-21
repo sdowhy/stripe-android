@@ -225,6 +225,7 @@ internal class LinkActivity : ComponentActivity() {
         }
 
         viewModel.navigator.onDismiss = ::dismiss
+        viewModel.navigator.launchedDirectly = starterArgs.launchedDirectly
         viewModel.setupPaymentLauncher(this)
 
         // Navigate to the initial screen once the view has been laid out.
@@ -263,10 +264,8 @@ internal class LinkActivity : ComponentActivity() {
     }
 
     private fun dismiss(result: LinkActivityResult) {
-        setResult(
-            result.resultCode,
-            Intent().putExtras(LinkActivityContract.Result(result).toBundle())
-        )
+        val intent = Intent().putExtras(result.toBundle())
+        setResult(result.resultCode, intent)
         finish()
     }
 

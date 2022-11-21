@@ -504,11 +504,11 @@ internal class DefaultFlowController @Inject internal constructor(
             (paymentSelection as? PaymentSelection.New.LinkInline)?.takeIf {
                 accountStatus == AccountStatus.Verified
             }?.linkPaymentDetails?.originalParams?.let {
-                linkLauncher.present(linkConfig, linkActivityResultLauncher, it)
+                linkLauncher.present(linkConfig, launchedDirectly = false, linkActivityResultLauncher, it)
             } ?: run {
                 if (paymentSelection is PaymentSelection.Link) {
                     // User selected Link as the payment method, not inline
-                    linkLauncher.present(linkConfig, linkActivityResultLauncher)
+                    linkLauncher.present(linkConfig, launchedDirectly = false, linkActivityResultLauncher)
                 } else {
                     // New user paying inline, complete without launching Link
                     confirmPaymentSelection(paymentSelection, initData)

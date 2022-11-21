@@ -24,7 +24,7 @@ import javax.inject.Inject
  * ViewModel that coordinates the user flow through the screens.
  */
 internal class LinkActivityViewModel @Inject internal constructor(
-    args: LinkActivityContract.Args,
+    private val args: LinkActivityContract.Args,
     val linkAccountManager: LinkAccountManager,
     val navigator: Navigator,
     private val confirmationManager: ConfirmationManager
@@ -70,8 +70,13 @@ internal class LinkActivityViewModel @Inject internal constructor(
                 requireNotNull(stripeIntent.amount)
                 requireNotNull(stripeIntent.currency)
             }
-        }.onFailure {
-            navigator.dismiss(LinkActivityResult.Failed(it))
+        }.onFailure { error ->
+            navigator.dismiss(
+                LinkActivityResult.Failed(
+                    error = error,
+                    launchedDirectly = args.launchedDirectly,
+                )
+            )
         }
     }
 

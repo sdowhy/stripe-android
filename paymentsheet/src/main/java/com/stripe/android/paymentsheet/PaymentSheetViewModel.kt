@@ -158,9 +158,6 @@ internal class PaymentSheetViewModel @Inject internal constructor(
         ActivityResultLauncher<LinkActivityContract.Args>? = null
 
     @VisibleForTesting
-    internal var launchedLinkDirectly: Boolean = false
-
-    @VisibleForTesting
     internal val googlePayLauncherConfig: GooglePayPaymentMethodLauncher.Config? =
         args.googlePayConfig?.let { config ->
             if (config.currencyCode == null && !isProcessingPaymentIntent) {
@@ -501,10 +498,10 @@ internal class PaymentSheetViewModel @Inject internal constructor(
         launchedDirectly: Boolean,
         paymentMethodCreateParams: PaymentMethodCreateParams? = null
     ) {
-        launchedLinkDirectly = launchedDirectly
         linkActivityResultLauncher?.let { activityResultLauncher ->
             linkLauncher.present(
                 configuration,
+                launchedDirectly,
                 activityResultLauncher,
                 paymentMethodCreateParams
             )
@@ -526,7 +523,7 @@ internal class PaymentSheetViewModel @Inject internal constructor(
      */
     private fun onLinkActivityResult(result: LinkActivityResult) {
         val completePaymentFlow = result is LinkActivityResult.Completed
-        val cancelPaymentFlow = launchedLinkDirectly &&
+        val cancelPaymentFlow = result.launchedDirectly &&
             result is LinkActivityResult.Canceled && result.reason == Reason.BackPressed
 
         if (completePaymentFlow) {

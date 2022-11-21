@@ -89,20 +89,23 @@ class LinkPaymentLauncher @Inject internal constructor(
     /**
      * Launch the Link UI to process a payment.
      *
-     * @param configuration The payment and customer settings
+     * @param configuration The payment and customer settings.
+     * @param launchedDirectly Whether Link was launched directly upon opening Payment Sheet.
      * @param activityResultLauncher Launcher that will receive the payment result.
      * @param prefilledNewCardParams The card information prefilled by the user. If non null, Link
      *  will launch into adding a new card, with the card information pre-filled.
      */
     fun present(
         configuration: Configuration,
+        launchedDirectly: Boolean,
         activityResultLauncher: ActivityResultLauncher<LinkActivityContract.Args>,
         prefilledNewCardParams: PaymentMethodCreateParams? = null
     ) {
         val args = LinkActivityContract.Args(
-            configuration,
-            prefilledNewCardParams,
-            LinkActivityContract.Args.InjectionParams(
+            configuration = configuration,
+            launchedDirectly = launchedDirectly,
+            prefilledCardParams = prefilledNewCardParams,
+            injectionParams = LinkActivityContract.Args.InjectionParams(
                 injectorKey,
                 productUsage,
                 enableLogging,

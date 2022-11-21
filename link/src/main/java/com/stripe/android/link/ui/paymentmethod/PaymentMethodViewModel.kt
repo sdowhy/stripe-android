@@ -224,7 +224,7 @@ internal class PaymentMethodViewModel @Inject constructor(
                             setState(PrimaryButtonState.Completed)
                             viewModelScope.launch {
                                 delay(PrimaryButtonState.COMPLETED_DELAY_MS)
-                                navigator.dismiss(LinkActivityResult.Completed)
+                                navigator.dismiss(LinkActivityResult.Completed(navigator.launchedDirectly))
                             }
                         }
                     }

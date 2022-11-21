@@ -66,6 +66,7 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Captor
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -439,7 +440,13 @@ internal class PaymentSheetViewModelTest {
         assertThat(viewModel.showLinkVerificationDialog.value).isFalse()
         assertThat(viewModel.activeLinkSession.value).isTrue()
         assertThat(viewModel.isLinkEnabled.value).isTrue()
-        assertThat(viewModel.launchedLinkDirectly).isTrue()
+
+        verify(linkLauncher).present(
+            configuration = any(),
+            launchedDirectly = eq(true),
+            activityResultLauncher = any(),
+            prefilledNewCardParams = anyOrNull(),
+        )
     }
 
     @Test

@@ -14,6 +14,7 @@ import javax.inject.Singleton
 @Singleton
 internal class Navigator @Inject constructor() {
     var userNavigationEnabled = true
+    var launchedDirectly = false
     var navigationController: NavHostController? = null
     var onDismiss: ((LinkActivityResult) -> Unit)? = null
 
@@ -65,7 +66,7 @@ internal class Navigator @Inject constructor() {
      * Cancels the Link Activity with the given [reason].
      */
     fun cancel(reason: LinkActivityResult.Canceled.Reason) {
-        dismiss(LinkActivityResult.Canceled(reason))
+        dismiss(LinkActivityResult.Canceled(reason, launchedDirectly))
     }
 
     fun isOnRootScreen() = navigationController?.isOnRootScreen()
