@@ -8,6 +8,7 @@ import com.stripe.android.core.model.CountryCode
 import com.stripe.android.googlepaylauncher.GooglePayRepository
 import com.stripe.android.link.LinkPaymentLauncher
 import com.stripe.android.link.model.AccountStatus
+import com.stripe.android.model.Address
 import com.stripe.android.model.PaymentIntent
 import com.stripe.android.model.PaymentIntentFixtures
 import com.stripe.android.model.PaymentMethod
@@ -16,6 +17,7 @@ import com.stripe.android.model.StripeIntent
 import com.stripe.android.paymentsheet.FakePrefsRepository
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetFixtures
+import com.stripe.android.paymentsheet.PaymentSheetViewModelTest
 import com.stripe.android.paymentsheet.addresselement.AddressDetails
 import com.stripe.android.paymentsheet.analytics.EventReporter
 import com.stripe.android.paymentsheet.model.PaymentIntentClientSecret
@@ -675,6 +677,144 @@ internal class DefaultPaymentSheetLoaderTest {
             .isEqualTo("email@stripe.com")
     }
 
+    @Test
+    fun `when StripeIntent does not accept any of the supported payment methods should return error`() = runTest {
+        val loader = createPaymentSheetLoader(
+            stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD.copy(
+                paymentMethodTypes = listOf("unsupported_payment_type"),
+            ),
+        )
+
+        val result = loader.load(
+            clientSecret = PaymentIntentClientSecret("secret"),
+            paymentSheetConfiguration = mockConfiguration()
+        )
+
+        assertThat(result)
+            .isInstanceOf(PaymentSheetLoader.Result.Failure::class.java)
+    }
+
+    @Test
+    fun `Verify supported payment methods exclude afterpay if no shipping and no allow flag`() = runTest {
+        val loader = createPaymentSheetLoader(
+            stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD.copy(
+                paymentMethodTypes = listOf("afterpay_clearpay", "card"),
+                shipping = null,
+            ),
+        )
+
+        val result = loader.load(
+            clientSecret = PaymentIntentClientSecret("secret"),
+            paymentSheetConfiguration = mockConfiguration(
+                allowsPaymentMethodsRequiringShippingAddress = false
+            )
+        )
+
+        assertThat(result)
+            .isInstanceOf(PaymentSheetLoader.Result.Success::class.java)
+        assertThat((result as PaymentSheetLoader.Result.Success).state.supportedPaymentMethodTypes)
+            .doesNotContain("afterpay_clearpay")
+    }
+
+    @Test
+    fun `Verify supported payment methods include afterpay if allow flag but no shipping`() = runTest {
+        val loader = createPaymentSheetLoader(
+            stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD.copy(
+                paymentMethodTypes = listOf("afterpay_clearpay"),
+                shipping = null,
+            ),
+        )
+
+        val result = loader.load(
+            clientSecret = PaymentIntentClientSecret("secret"),
+            paymentSheetConfiguration = mockConfiguration(
+                allowsPaymentMethodsRequiringShippingAddress = true
+            )
+        )
+
+        assertThat(result)
+            .isInstanceOf(PaymentSheetLoader.Result.Success::class.java)
+        assertThat((result as PaymentSheetLoader.Result.Success).state.supportedPaymentMethodTypes)
+            .containsExactly("afterpay_clearpay")
+    }
+
+    @Test
+    fun `Verify supported payment methods include afterpay if shipping but no allow flag`() = runTest {
+        val loader = createPaymentSheetLoader(
+            stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD.copy(
+                paymentMethodTypes = listOf("afterpay_clearpay"),
+                shipping = PaymentIntent.Shipping(
+                    address = Address("city")
+                )
+            ),
+        )
+
+        val result = loader.load(
+            clientSecret = PaymentIntentClientSecret("secret"),
+            paymentSheetConfiguration = mockConfiguration(
+                allowsPaymentMethodsRequiringShippingAddress = true
+            )
+        )
+
+        assertThat(result)
+            .isInstanceOf(PaymentSheetLoader.Result.Success::class.java)
+        assertThat((result as PaymentSheetLoader.Result.Success).state.supportedPaymentMethodTypes)
+            .containsExactly("afterpay_clearpay")
+    }
+
+    @Test
+    fun `getSupportedPaymentMethods() filters payment methods with delayed settlement`() = runTest {
+        val loader = createPaymentSheetLoader(
+            stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD.copy(
+                paymentMethodTypes = listOf(
+                    PaymentMethod.Type.Card.code,
+                    PaymentMethod.Type.Ideal.code,
+                    PaymentMethod.Type.SepaDebit.code,
+                    PaymentMethod.Type.Sofort.code,
+                )
+            ),
+        )
+
+        val result = loader.load(
+            clientSecret = PaymentIntentClientSecret("secret"),
+            paymentSheetConfiguration = mockConfiguration(
+                allowsPaymentMethodsRequiringShippingAddress = true
+            )
+        )
+
+        assertThat(result)
+            .isInstanceOf(PaymentSheetLoader.Result.Success::class.java)
+        assertThat((result as PaymentSheetLoader.Result.Success).state.supportedPaymentMethodTypes)
+            .containsExactly("card", "ideal")
+    }
+
+    @Test
+    fun `getSupportedPaymentMethods() does not filter payment methods when supportsDelayedSettlement = true`() = runTest {
+        val loader = createPaymentSheetLoader(
+            stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD.copy(
+                paymentMethodTypes = listOf(
+                    PaymentMethod.Type.Card.code,
+                    PaymentMethod.Type.Ideal.code,
+                    PaymentMethod.Type.SepaDebit.code,
+                    PaymentMethod.Type.Sofort.code,
+                )
+            ),
+        )
+
+        val result = loader.load(
+            clientSecret = PaymentIntentClientSecret("secret"),
+            paymentSheetConfiguration = mockConfiguration(
+                allowsPaymentMethodsRequiringShippingAddress = true,
+                allowsDelayedPaymentMethods = true
+            )
+        )
+
+        assertThat(result)
+            .isInstanceOf(PaymentSheetLoader.Result.Success::class.java)
+        assertThat((result as PaymentSheetLoader.Result.Success).state.supportedPaymentMethodTypes)
+            .containsExactly("card", "ideal", "sepa_debit", "sofort")
+    }
+
     private fun createPaymentSheetLoader(
         isGooglePayReady: Boolean = true,
         stripeIntent: StripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD,
@@ -703,6 +843,8 @@ internal class DefaultPaymentSheetLoaderTest {
         isGooglePayEnabled: Boolean = true,
         shippingDetails: AddressDetails? = null,
         defaultBillingDetails: PaymentSheet.BillingDetails? = null,
+        allowsPaymentMethodsRequiringShippingAddress: Boolean = false,
+        allowsDelayedPaymentMethods: Boolean = false
     ): PaymentSheet.Configuration {
         return PaymentSheet.Configuration(
             merchantDisplayName = "Merchant",
@@ -712,7 +854,9 @@ internal class DefaultPaymentSheetLoaderTest {
             googlePay = PaymentSheet.GooglePayConfiguration(
                 environment = PaymentSheet.GooglePayConfiguration.Environment.Test,
                 countryCode = CountryCode.US.value
-            ).takeIf { isGooglePayEnabled }
+            ).takeIf { isGooglePayEnabled },
+            allowsPaymentMethodsRequiringShippingAddress = allowsPaymentMethodsRequiringShippingAddress,
+            allowsDelayedPaymentMethods = allowsDelayedPaymentMethods
         )
     }
 

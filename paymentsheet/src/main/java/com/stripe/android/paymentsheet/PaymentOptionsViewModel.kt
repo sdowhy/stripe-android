@@ -3,8 +3,6 @@ package com.stripe.android.paymentsheet
 import android.app.Application
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -35,6 +33,8 @@ import com.stripe.android.ui.core.address.AddressRepository
 import com.stripe.android.ui.core.forms.resources.LpmRepository
 import com.stripe.android.ui.core.forms.resources.ResourceRepository
 import com.stripe.android.utils.requireApplication
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.coroutines.CoroutineContext
@@ -69,18 +69,18 @@ internal class PaymentOptionsViewModel @Inject constructor(
     linkLauncher = linkLauncher
 ) {
     @VisibleForTesting
-    internal val _paymentOptionResult = MutableLiveData<PaymentOptionResult>()
-    internal val paymentOptionResult: LiveData<PaymentOptionResult> = _paymentOptionResult
+    internal val _paymentOptionResult = MutableStateFlow<PaymentOptionResult?>(null)
+    internal val paymentOptionResult: StateFlow<PaymentOptionResult?> = _paymentOptionResult
 
-    private val _error = MutableLiveData<String>()
-    internal val error: LiveData<String>
+    private val _error = MutableStateFlow<String?>(null)
+    internal val error: StateFlow<String?>
         get() = _error
 
     // Only used to determine if we should skip the list and go to the add card view.
     // and how to populate that view.
     override var newPaymentSelection = args.state.newPaymentSelection
 
-    override var linkInlineSelection = MutableLiveData<PaymentSelection.New.LinkInline?>(
+    override var linkInlineSelection = MutableStateFlow(
         args.state.newPaymentSelection as? PaymentSelection.New.LinkInline,
     )
 

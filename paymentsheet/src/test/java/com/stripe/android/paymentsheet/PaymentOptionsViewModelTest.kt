@@ -26,15 +26,22 @@ import com.stripe.android.paymentsheet.viewmodels.BaseSheetViewModel
 import com.stripe.android.ui.core.forms.resources.StaticLpmResourceRepository
 import com.stripe.android.utils.FakeCustomerRepository
 import com.stripe.android.utils.TestUtils.idleLooper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.Test
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)
@@ -50,13 +57,27 @@ internal class PaymentOptionsViewModelTest {
     private val lpmResourceRepository = StaticLpmResourceRepository(mock())
     private val linkLauncher = mock<LinkPaymentLauncher>()
 
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @AfterTest
+    fun cleanup() {
+        Dispatchers.resetMain()
+    }
+
     @Test
-    fun `onUserSelection() when selection has been made should set the view state to process result`() {
+    fun `onUserSelection() when selection has been made should set the view state to process result`() = runTest(
+        UnconfinedTestDispatcher()
+    )  {
         var paymentOptionResult: PaymentOptionResult? = null
 
         val viewModel = createViewModel()
-        viewModel.paymentOptionResult.observeForever {
-            paymentOptionResult = it
+        launch {
+            viewModel.paymentOptionResult.collect {
+                paymentOptionResult = it
+            }
         }
         viewModel.updateSelection(SELECTION_SAVED_PAYMENT_METHOD)
         viewModel.onUserSelection()
@@ -72,12 +93,14 @@ internal class PaymentOptionsViewModelTest {
 
     @Test
     fun `onUserSelection() when new card selection with no save should set the view state to process result`() =
-        runTest {
+        runTest(UnconfinedTestDispatcher()) {
             var paymentOptionResult: PaymentOptionResult? = null
 
             val viewModel = createViewModel()
-            viewModel.paymentOptionResult.observeForever {
-                paymentOptionResult = it
+            launch {
+                viewModel.paymentOptionResult.collect {
+                    paymentOptionResult = it
+                }
             }
             viewModel.updateSelection(NEW_REQUEST_DONT_SAVE_PAYMENT_SELECTION)
             viewModel.onUserSelection()
@@ -97,14 +120,16 @@ internal class PaymentOptionsViewModelTest {
 
     @Test
     fun `onUserSelection() new card with save should complete with succeeded view state`() =
-        runTest {
+        runTest(UnconfinedTestDispatcher()) {
             paymentMethodRepository.savedPaymentMethod = PaymentMethodFixtures.CARD_PAYMENT_METHOD
 
             var paymentOptionResult: PaymentOptionResult? = null
 
             val viewModel = createViewModel()
-            viewModel.paymentOptionResult.observeForever {
-                paymentOptionResult = it
+            launch {
+                viewModel.paymentOptionResult.collect {
+                    paymentOptionResult = it
+                }
             }
             viewModel.updateSelection(NEW_REQUEST_SAVE_PAYMENT_SELECTION)
             viewModel.onUserSelection()
@@ -117,14 +142,16 @@ internal class PaymentOptionsViewModelTest {
         }
 
     @Test
-    fun `resolveTransitionTarget no new card`() {
+    fun `resolveTransitionTarget no new card`() = runTest(UnconfinedTestDispatcher()) {
         val viewModel = createViewModel(
             args = PAYMENT_OPTION_CONTRACT_ARGS.updateState(newPaymentSelection = null)
         )
 
         var transitionTarget: BaseSheetViewModel.Event<TransitionTarget?>? = null
-        viewModel.transition.observeForever {
-            transitionTarget = it
+        launch {
+            viewModel.transition.collect {
+                transitionTarget = it
+            }
         }
 
         // no customer, no new card, no paymentMethods
@@ -135,7 +162,7 @@ internal class PaymentOptionsViewModelTest {
     }
 
     @Test
-    fun `resolveTransitionTarget new card saved`() {
+    fun `resolveTransitionTarget new card saved`() = runTest(UnconfinedTestDispatcher()) {
         val viewModel = createViewModel(
             args = PAYMENT_OPTION_CONTRACT_ARGS.updateState(
                 stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD_WITHOUT_LINK,
@@ -146,8 +173,10 @@ internal class PaymentOptionsViewModelTest {
         )
 
         val transitionTarget = mutableListOf<BaseSheetViewModel.Event<TransitionTarget?>>()
-        viewModel.transition.observeForever {
-            transitionTarget.add(it)
+        launch {
+            viewModel.transition.collect {
+                transitionTarget.add(it)
+            }
         }
 
         val fragmentConfig = FragmentConfigFixtures.DEFAULT
@@ -159,7 +188,7 @@ internal class PaymentOptionsViewModelTest {
     }
 
     @Test
-    fun `resolveTransitionTarget new card NOT saved`() {
+    fun `resolveTransitionTarget new card NOT saved`() = runTest(UnconfinedTestDispatcher()) {
         val viewModel = createViewModel(
             args = PAYMENT_OPTION_CONTRACT_ARGS.updateState(
                 stripeIntent = PaymentIntentFixtures.PI_REQUIRES_PAYMENT_METHOD_WITHOUT_LINK,
@@ -170,8 +199,10 @@ internal class PaymentOptionsViewModelTest {
         )
 
         val transitionTarget = mutableListOf<BaseSheetViewModel.Event<TransitionTarget?>>()
-        viewModel.transition.observeForever {
-            transitionTarget.add(it)
+        launch {
+            viewModel.transition.collect {
+                transitionTarget.add(it)
+            }
         }
 
         val fragmentConfig = FragmentConfigFixtures.DEFAULT
@@ -216,7 +247,9 @@ internal class PaymentOptionsViewModelTest {
     }
 
     @Test
-    fun `when paymentMethods is empty, primary button and text below button are gone`() = runTest {
+    fun `when paymentMethods is empty, primary button and text below button are gone`() = runTest(
+        UnconfinedTestDispatcher()
+    ) {
         val paymentMethod = PaymentMethodFixtures.US_BANK_ACCOUNT
         val viewModel = createViewModel(
             args = PAYMENT_OPTION_CONTRACT_ARGS.updateState(
@@ -224,9 +257,15 @@ internal class PaymentOptionsViewModelTest {
             )
         )
 
-        viewModel.paymentMethods.observeForever {}
-        viewModel.primaryButtonUIState.observeForever {}
-        viewModel.notesText.observeForever {}
+        launch {
+            viewModel.paymentMethods.collect {}
+        }
+        launch {
+            viewModel.primaryButtonUIState.collect {}
+        }
+        launch {
+            viewModel.notesText.collect {}
+        }
 
         viewModel.removePaymentMethod(paymentMethod)
         idleLooper()
@@ -251,7 +290,9 @@ internal class PaymentOptionsViewModelTest {
     }
 
     @Test
-    fun `Selects Link when user needs to verify their Link account`() = runTest {
+    fun `Selects Link when user needs to verify their Link account`() = runTest(
+        UnconfinedTestDispatcher()
+    ) {
         val viewModel = createViewModel(
             linkState = LinkState(
                 configuration = mock(),
@@ -259,8 +300,12 @@ internal class PaymentOptionsViewModelTest {
             ),
         )
 
-        viewModel.selection.observeForever {}
-        viewModel.isLinkEnabled.observeForever {}
+        launch {
+            viewModel.selection.collect {}
+        }
+        launch {
+            viewModel.isLinkEnabled.collect {}
+        }
 
         assertThat(viewModel.selection.value).isEqualTo(PaymentSelection.Link)
 //        assertThat(viewModel.activeLinkSession.value).isFalse()

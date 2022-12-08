@@ -25,6 +25,12 @@ import com.stripe.android.paymentsheet.model.SavedSelection
 import com.stripe.android.ui.core.address.AddressRepository
 import com.stripe.android.ui.core.forms.resources.LpmRepository
 import com.stripe.android.utils.TestUtils.idleLooper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,22 +39,31 @@ import org.mockito.kotlin.verify
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 internal class PaymentSheetListFragmentTest : PaymentSheetViewModelTestInjection() {
     @InjectorKey
     private val injectorKey: String = "PaymentSheetListFragmentTest"
 
-    @Before
-    fun setup() {
+    @BeforeTest
+    fun before() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
         PaymentConfiguration.init(
             ApplicationProvider.getApplicationContext(),
             ApiKeyFixtures.FAKE_PUBLISHABLE_KEY
         )
     }
 
+    @AfterTest
+    fun cleanup() {
+        Dispatchers.resetMain()
+    }
+
     @Test
-    fun `recovers payment method selection when shown`() {
+    fun `recovers payment method selection when shown`() = runTest(UnconfinedTestDispatcher()) {
         val paymentMethod = PaymentMethodFixtures.CARD_PAYMENT_METHOD
         val paymentSelection = PaymentSelection.Saved(paymentMethod)
 
@@ -61,7 +76,6 @@ internal class PaymentSheetListFragmentTest : PaymentSheetViewModelTestInjection
             selection = paymentSelection,
         ).moveToState(Lifecycle.State.STARTED).onFragment {
             val viewModel = activityViewModel(it)
-            viewModel.selection.observeForever {}
             assertThat(viewModel.selection.value).isEqualTo(paymentSelection)
         }
 
@@ -69,7 +83,6 @@ internal class PaymentSheetListFragmentTest : PaymentSheetViewModelTestInjection
 
         scenario.onFragment {
             val viewModel = activityViewModel(it)
-            viewModel.selection.observeForever {}
             assertThat(viewModel.selection.value).isEqualTo(paymentSelection)
         }
     }
@@ -116,7 +129,7 @@ internal class PaymentSheetListFragmentTest : PaymentSheetViewModelTestInjection
             idleLooper()
 
             val adapter = recyclerView(it).adapter as PaymentOptionsAdapter
-            assertThat(adapter.itemCount).isEqualTo(3)
+            assertThat(adapter.itemCount).isEqualTo(2)
         }
     }
 
@@ -175,7 +188,7 @@ internal class PaymentSheetListFragmentTest : PaymentSheetViewModelTestInjection
     fun `posts transition when add card clicked`() {
         createScenario().onFragment {
             val activityViewModel = activityViewModel(it)
-            assertThat(activityViewModel.transition.value?.peekContent()).isNull()
+            assertThat(activityViewModel.transition.value.peekContent()).isNull()
 
             idleLooper()
 
@@ -183,7 +196,7 @@ internal class PaymentSheetListFragmentTest : PaymentSheetViewModelTestInjection
             adapter.addCardClickListener()
             idleLooper()
 
-            assertThat(activityViewModel.transition.value?.peekContent())
+            assertThat(activityViewModel.transition.value.peekContent())
                 .isEqualTo(
                     PaymentSheetViewModel.TransitionTarget.AddPaymentMethodFull(
                         FragmentConfigFixtures.DEFAULT

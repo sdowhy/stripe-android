@@ -53,10 +53,15 @@ import com.stripe.android.utils.TestUtils.idleLooper
 import com.stripe.android.utils.TestUtils.viewModelFactoryFor
 import com.stripe.android.utils.injectableActivityScenario
 import com.stripe.android.view.ActivityStarter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -110,6 +115,7 @@ internal class PaymentOptionsActivityTest {
 
     @BeforeTest
     fun setup() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
         PaymentConfiguration.init(
             ApplicationProvider.getApplicationContext(),
             ApiKeyFixtures.FAKE_PUBLISHABLE_KEY
@@ -118,6 +124,7 @@ internal class PaymentOptionsActivityTest {
 
     @AfterTest
     fun cleanup() {
+        Dispatchers.resetMain()
         WeakMapInjectorRegistry.clear()
     }
 
@@ -260,47 +267,54 @@ internal class PaymentOptionsActivityTest {
     }
 
     @Test
-    fun `Verify if google pay is ready, stay on the select saved payment method`() {
-        val args = PAYMENT_OPTIONS_CONTRACT_ARGS.updateState(isGooglePayReady = true)
-        val viewModel = createViewModel(args)
+    fun `Verify if google pay is ready, stay on the select saved payment method`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val args = PAYMENT_OPTIONS_CONTRACT_ARGS.updateState(isGooglePayReady = true)
+            val viewModel = createViewModel(args)
 
-        val transitionTarget = mutableListOf<BaseSheetViewModel.Event<TransitionTarget?>>()
-        viewModel.transition.observeForever {
-            transitionTarget.add(it)
+            val transitionTarget = mutableListOf<BaseSheetViewModel.Event<TransitionTarget?>>()
+            launch {
+                viewModel.transition.collect {
+                    transitionTarget.add(it)
+                }
+            }
+
+            val scenario = activityScenario(viewModel)
+            scenario.launch(
+                createIntent(args)
+            ).use {
+                idleLooper()
+                assertThat(transitionTarget[1].peekContent())
+                    .isInstanceOf(TransitionTarget.SelectSavedPaymentMethod::class.java)
+            }
         }
-        val scenario = activityScenario(viewModel)
-        scenario.launch(
-            createIntent(args)
-        ).use {
-            idleLooper()
-            assertThat(transitionTarget[1].peekContent())
-                .isInstanceOf(TransitionTarget.SelectSavedPaymentMethod::class.java)
-        }
-    }
 
     @Test
-    fun `Verify if payment methods is not empty select, saved payment method`() {
-        val args = PAYMENT_OPTIONS_CONTRACT_ARGS.updateState(
-            isGooglePayReady = false,
-            paymentMethods = listOf(PaymentMethodFixtures.CARD_PAYMENT_METHOD)
-        )
+    fun `Verify if payment methods is not empty select, saved payment method`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val args = PAYMENT_OPTIONS_CONTRACT_ARGS.updateState(
+                isGooglePayReady = false,
+                paymentMethods = listOf(PaymentMethodFixtures.CARD_PAYMENT_METHOD)
+            )
 
-        val viewModel = createViewModel(args)
-        val transitionTarget =
-            mutableListOf<BaseSheetViewModel.Event<TransitionTarget?>>()
-        viewModel.transition.observeForever {
-            transitionTarget.add(it)
-        }
+            val viewModel = createViewModel(args)
+            val transitionTarget =
+                mutableListOf<BaseSheetViewModel.Event<TransitionTarget?>>()
+            launch {
+                viewModel.transition.collect {
+                    transitionTarget.add(it)
+                }
+            }
 
-        val scenario = activityScenario(viewModel)
-        scenario.launch(
-            createIntent(args)
-        ).use {
-            idleLooper()
-            assertThat(transitionTarget[1].peekContent())
-                .isInstanceOf(TransitionTarget.SelectSavedPaymentMethod::class.java)
+            val scenario = activityScenario(viewModel)
+            scenario.launch(
+                createIntent(args)
+            ).use {
+                idleLooper()
+                assertThat(transitionTarget[1].peekContent())
+                    .isInstanceOf(TransitionTarget.SelectSavedPaymentMethod::class.java)
+            }
         }
-    }
 
     @Test
     fun `Verify bottom sheet expands on start`() {

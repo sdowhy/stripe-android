@@ -17,8 +17,10 @@ import androidx.core.os.bundleOf
 import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.commit
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.stripe.android.googlepaylauncher.GooglePayPaymentMethodLauncherContract
@@ -122,45 +124,47 @@ internal class PaymentSheetActivity : BaseSheetActivity<PaymentSheetResult>() {
             linkPaymentLauncher = viewModel.linkLauncher
         }
 
-        viewModel.transition.observe(this) { transitionEvent ->
-            transitionEvent?.let {
-                clearErrorMessages()
-                it.getContentIfNotHandled()?.let { transitionTarget ->
-                    onTransitionTarget(
-                        transitionTarget,
-                        bundleOf(
-                            EXTRA_STARTER_ARGS to starterArgs,
-                            EXTRA_FRAGMENT_CONFIG to transitionTarget.fragmentConfig
-                        )
+        viewModel.transition.collectInActivity { transitionEvent ->
+            clearErrorMessages()
+            transitionEvent.getContentIfNotHandled()?.let { transitionTarget ->
+                onTransitionTarget(
+                    transitionTarget,
+                    bundleOf(
+                        EXTRA_STARTER_ARGS to starterArgs,
+                        EXTRA_FRAGMENT_CONFIG to transitionTarget.fragmentConfig
                     )
-                }
+                )
             }
         }
 
-        viewModel.fragmentConfigEvent.observe(this) { event ->
-            val config = event.getContentIfNotHandled()
-            if (config != null) {
-                // We only want to do this if the loading fragment is shown.  Otherwise this causes
-                // a new fragment to be created if the activity was destroyed and recreated.
-                // If hyperion is an added dependency it is loaded on top of the
-                // PaymentSheetLoadingFragment
-                if (supportFragmentManager.fragments
-                    .filterIsInstance<PaymentSheetLoadingFragment>()
-                    .isNotEmpty()
-                ) {
-                    val target = if (viewModel.paymentMethods.value.isNullOrEmpty()) {
-                        viewModel.updateSelection(null)
-                        PaymentSheetViewModel.TransitionTarget.AddPaymentMethodSheet(config)
-                    } else {
-                        PaymentSheetViewModel.TransitionTarget.SelectSavedPaymentMethod(config)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.fragmentConfigEvent.collect { event ->
+                    val config = event.getContentIfNotHandled()
+                    if (config != null) {
+                        // We only want to do this if the loading fragment is shown.  Otherwise this causes
+                        // a new fragment to be created if the activity was destroyed and recreated.
+                        // If hyperion is an added dependency it is loaded on top of the
+                        // PaymentSheetLoadingFragment
+                        if (supportFragmentManager.fragments
+                                .filterIsInstance<PaymentSheetLoadingFragment>()
+                                .isNotEmpty()
+                        ) {
+                            val target = if (viewModel.paymentMethods.value.isEmpty()) {
+                                viewModel.updateSelection(null)
+                                PaymentSheetViewModel.TransitionTarget.AddPaymentMethodSheet(config)
+                            } else {
+                                PaymentSheetViewModel.TransitionTarget.SelectSavedPaymentMethod(config)
+                            }
+                            viewModel.transitionTo(target)
+                        }
                     }
-                    viewModel.transitionTo(target)
                 }
             }
         }
 
-        viewModel.startConfirm.observe(this) { event ->
-            val confirmParams = event.getContentIfNotHandled()
+        viewModel.startConfirm.collectInActivity { event ->
+            val confirmParams = event?.getContentIfNotHandled()
             if (confirmParams != null) {
                 window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
                 lifecycleScope.launch {
@@ -169,22 +173,28 @@ internal class PaymentSheetActivity : BaseSheetActivity<PaymentSheetResult>() {
             }
         }
 
-        viewModel.paymentSheetResult.observe(this) {
-            closeSheet(it)
+        viewModel.paymentSheetResult.collectInActivity { result ->
+            result?.let {
+                closeSheet(it)
+            }
         }
 
-        viewModel.buttonsEnabled.observe(this) { enabled ->
+        viewModel.buttonsEnabled.collectInActivity { enabled ->
             linkButton.isEnabled = enabled
             googlePayButton.isEnabled = enabled
         }
 
-        viewModel.selection.observe(this) {
+        viewModel.selection.collectInActivity {
             clearErrorMessages()
             resetPrimaryButtonState()
         }
 
-        viewModel.getButtonStateObservable(CheckoutIdentifier.SheetBottomBuy)
-            .observe(this, buyButtonStateObserver)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.getButtonStateObservable(CheckoutIdentifier.SheetBottomBuy)
+                    .collect(buyButtonStateObserver)
+            }
+        }
     }
 
     private fun initializeArgs(): Result<PaymentSheetContract.Args?> {
@@ -294,20 +304,24 @@ internal class PaymentSheetActivity : BaseSheetActivity<PaymentSheetResult>() {
                 R.string.stripe_paymentsheet_or_pay_using
             }
         )
-        viewModel.showTopContainer.observe(this) { visible ->
-            linkButton.isVisible = viewModel.isLinkEnabled.value == true
-            googlePayButton.isVisible = viewModel.isGooglePayReady.value == true
-            topContainer.isVisible = visible
-            // We have to set the UI after we know it's visible. Setting UI on a GONE or INVISIBLE
-            // view will cause tests to hang indefinitely.
-            if (visible) {
-                googlePayDivider.apply {
-                    setViewCompositionStrategy(
-                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-                    )
-                    setContent {
-                        PaymentsTheme {
-                            GooglePayDividerUi(dividerText)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.showTopContainer.collect { visible ->
+                    linkButton.isVisible = viewModel.isLinkEnabled.value == true
+                    googlePayButton.isVisible = viewModel.isGooglePayReady.value == true
+                    topContainer.isVisible = visible
+                    // We have to set the UI after we know it's visible. Setting UI on a GONE or INVISIBLE
+                    // view will cause tests to hang indefinitely.
+                    if (visible) {
+                        googlePayDivider.apply {
+                            setViewCompositionStrategy(
+                                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                            )
+                            setContent {
+                                PaymentsTheme {
+                                    GooglePayDividerUi(dividerText)
+                                }
+                            }
                         }
                     }
                 }
@@ -323,22 +337,26 @@ internal class PaymentSheetActivity : BaseSheetActivity<PaymentSheetResult>() {
             viewModel.updateSelection(PaymentSelection.GooglePay)
         }
 
-        viewModel.selection.observe(this) { paymentSelection ->
+        viewModel.selection.collectInActivity { paymentSelection ->
             if (paymentSelection == PaymentSelection.GooglePay) {
                 viewModel.checkout(CheckoutIdentifier.SheetTopGooglePay)
             }
         }
 
-        viewModel.getButtonStateObservable(CheckoutIdentifier.SheetTopGooglePay)
-            .observe(this) { viewState ->
-                if (viewState is PaymentSheetViewState.Reset) {
-                    // If Google Pay was cancelled or failed, re-select the form payment method
-                    viewModel.updateSelection(viewModel.lastSelectedPaymentMethod)
-                }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.getButtonStateObservable(CheckoutIdentifier.SheetTopGooglePay)
+                    .collect { viewState ->
+                        if (viewState is PaymentSheetViewState.Reset) {
+                            // If Google Pay was cancelled or failed, re-select the form payment method
+                            viewModel.updateSelection(viewModel.lastSelectedPaymentMethod)
+                        }
 
-                updateErrorMessage(topMessage, viewState?.errorMessage)
-                googlePayButton.updateState(viewState?.convert())
+                        updateErrorMessage(topMessage, viewState?.errorMessage)
+                        googlePayButton.updateState(viewState?.convert())
+                    }
             }
+        }
     }
 
     override fun clearErrorMessages() {

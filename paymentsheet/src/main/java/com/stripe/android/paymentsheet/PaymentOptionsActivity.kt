@@ -16,7 +16,10 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.stripe.android.paymentsheet.databinding.ActivityPaymentOptionsBinding
@@ -24,6 +27,7 @@ import com.stripe.android.paymentsheet.ui.BaseSheetActivity
 import com.stripe.android.paymentsheet.ui.PrimaryButton
 import com.stripe.android.paymentsheet.viewmodels.BaseSheetViewModel
 import com.stripe.android.utils.AnimationConstants
+import kotlinx.coroutines.launch
 
 /**
  * An `Activity` for selecting a payment option.
@@ -77,20 +81,24 @@ internal class PaymentOptionsActivity : BaseSheetActivity<PaymentOptionResult>()
         }
         setContentView(viewBinding.root)
 
-        viewModel.paymentOptionResult.observe(this) {
-            closeSheet(it)
+        viewModel.paymentOptionResult.collectInActivity { result ->
+            result?.let {
+                closeSheet(it)
+            }
         }
 
-        viewModel.error.observe(this) {
-            updateErrorMessage(
-                messageView,
-                BaseSheetViewModel.UserErrorMessage(it)
-            )
+        viewModel.error.collectInActivity { error ->
+            error?.let {
+                updateErrorMessage(
+                    messageView,
+                    BaseSheetViewModel.UserErrorMessage(it)
+                )
+            }
         }
 
-        viewModel.transition.observe(this) { event ->
+        viewModel.transition.collectInActivity { event ->
             clearErrorMessages()
-            event?.getContentIfNotHandled()?.let { transitionTarget ->
+            event.getContentIfNotHandled()?.let { transitionTarget ->
                 onTransitionTarget(
                     transitionTarget,
                     bundleOf(
@@ -105,31 +113,35 @@ internal class PaymentOptionsActivity : BaseSheetActivity<PaymentOptionResult>()
         // if we are recovering from process kill or activity died, we should leave the fragment
         // in it's current state.
         if (!isSelectOrAddFragment()) {
-            viewModel.fragmentConfigEvent.observe(this) { event ->
-                val config = event.getContentIfNotHandled()
-                if (config != null) {
-                    if (viewModel.isResourceRepositoryReady.value == true) {
-                        viewModel.transitionTo(
-                            // It would be nice to see this condition move into the PaymentOptionsListFragment
-                            // where we also jump to a new unsaved card. However this move require
-                            // the transition target to specify when to and when not to add things to the
-                            // backstack.
-                            if (starterArgs.state.hasPaymentOptions) {
-                                PaymentOptionsViewModel.TransitionTarget.SelectSavedPaymentMethod(
-                                    config
-                                )
-                            } else {
-                                PaymentOptionsViewModel.TransitionTarget.AddPaymentMethodSheet(
-                                    config
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.fragmentConfigEvent.collect { event ->
+                        val config = event.getContentIfNotHandled()
+                        if (config != null) {
+                            if (viewModel.isResourceRepositoryReady.value == true) {
+                                viewModel.transitionTo(
+                                    // It would be nice to see this condition move into the PaymentOptionsListFragment
+                                    // where we also jump to a new unsaved card. However this move require
+                                    // the transition target to specify when to and when not to add things to the
+                                    // backstack.
+                                    if (starterArgs.state.hasPaymentOptions) {
+                                        PaymentOptionsViewModel.TransitionTarget.SelectSavedPaymentMethod(
+                                            config
+                                        )
+                                    } else {
+                                        PaymentOptionsViewModel.TransitionTarget.AddPaymentMethodSheet(
+                                            config
+                                        )
+                                    }
                                 )
                             }
-                        )
+                        }
                     }
                 }
             }
         }
 
-        viewModel.selection.observe(this) {
+        viewModel.selection.collectInActivity {
             clearErrorMessages()
             resetPrimaryButtonState()
         }

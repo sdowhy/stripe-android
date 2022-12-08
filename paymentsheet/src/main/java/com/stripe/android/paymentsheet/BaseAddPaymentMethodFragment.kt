@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -72,10 +71,9 @@ internal abstract class BaseAddPaymentMethodFragment : Fragment() {
     internal fun AddPaymentMethod(
         showCheckboxFlow: MutableStateFlow<Boolean>
     ) {
-        val isRepositoryReady by sheetViewModel.isResourceRepositoryReady.observeAsState()
-        val processing by sheetViewModel.processing.observeAsState(false)
-
-        val linkConfig by sheetViewModel.linkConfiguration.observeAsState()
+        val isRepositoryReady by sheetViewModel.isResourceRepositoryReady.collectAsState()
+        val processing by sheetViewModel.processing.collectAsState(false)
+        val linkConfig by sheetViewModel.linkConfiguration.collectAsState()
         val linkAccountStatus by linkConfig?.let {
             sheetViewModel.linkLauncher.getAccountStatusFlow(it).collectAsState(null)
         } ?: mutableStateOf(null)
@@ -104,8 +102,8 @@ internal abstract class BaseAddPaymentMethodFragment : Fragment() {
                 showCheckboxFlow.emit(arguments.showCheckbox)
             }
 
-            val paymentSelection by sheetViewModel.selection.observeAsState()
-            val linkInlineSelection by sheetViewModel.linkInlineSelection.observeAsState()
+            val paymentSelection by sheetViewModel.selection.collectAsState()
+            val linkInlineSelection by sheetViewModel.linkInlineSelection.collectAsState()
             var linkSignupState by remember {
                 mutableStateOf<InlineSignupViewState?>(null)
             }
@@ -183,6 +181,8 @@ internal abstract class BaseAddPaymentMethodFragment : Fragment() {
             id = R.dimen.stripe_paymentsheet_outer_spacing_horizontal
         )
 
+        val linkInlineSelection = sheetViewModel.linkInlineSelection.collectAsState().value
+
         Column(modifier = Modifier.fillMaxWidth()) {
             if (supportedPaymentMethods.size > 1) {
                 PaymentMethodsUI(
@@ -211,7 +211,7 @@ internal abstract class BaseAddPaymentMethodFragment : Fragment() {
             }
 
             if (showLinkInlineSignup) {
-                if (sheetViewModel.linkInlineSelection.value != null) {
+                if (linkInlineSelection != null) {
                     LinkInlineSignedIn(
                         linkPaymentLauncher = linkPaymentLauncher,
                         onLogout = {

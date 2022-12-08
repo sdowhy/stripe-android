@@ -20,6 +20,7 @@ import com.stripe.android.paymentsheet.viewmodels.BaseSheetViewModel
 import com.stripe.android.ui.core.PaymentsThemeDefaults
 import com.stripe.android.ui.core.createTextSpanFromTextStyle
 import com.stripe.android.ui.core.isSystemDarkTheme
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 internal abstract class BasePaymentMethodsListFragment(
@@ -57,7 +58,7 @@ internal abstract class BasePaymentMethodsListFragment(
         }
         this.config = nullableConfig
 
-        sheetViewModel.paymentMethods.observe(this) { paymentMethods ->
+        sheetViewModel.paymentMethods.collectInFragment { paymentMethods ->
             setHasOptionsMenu(paymentMethods.isNotEmpty())
         }
 
@@ -138,24 +139,20 @@ internal abstract class BasePaymentMethodsListFragment(
             viewBinding.recycler.adapter = it
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                sheetViewModel.paymentOptionsState.collect { paymentOptionsState ->
-                    adapter.update(
-                        items = paymentOptionsState.items,
-                        selectedIndex = paymentOptionsState.selectedIndex,
-                    )
-                }
-            }
+        sheetViewModel.paymentOptionsState.collectInFragment { paymentOptionsState ->
+            adapter.update(
+                items = paymentOptionsState.items,
+                selectedIndex = paymentOptionsState.selectedIndex,
+            )
         }
 
-        sheetViewModel.paymentMethods.observe(viewLifecycleOwner) { paymentMethods ->
+        sheetViewModel.paymentMethods.collectInFragment { paymentMethods ->
             if (isEditing && paymentMethods.isEmpty()) {
                 isEditing = false
             }
         }
 
-        sheetViewModel.processing.observe(viewLifecycleOwner) { isProcessing ->
+        sheetViewModel.processing.collectInFragment { isProcessing ->
             adapter.isEnabled = !isProcessing
             layoutManager.canScroll = !isProcessing
         }
@@ -171,6 +168,16 @@ internal abstract class BasePaymentMethodsListFragment(
     @VisibleForTesting
     fun deletePaymentMethod(item: PaymentOptionsItem.SavedPaymentMethod) {
         sheetViewModel.removePaymentMethod(item.paymentMethod)
+    }
+
+    private inline fun <T> StateFlow<T>.collectInFragment(crossinline transform: (T) -> Unit) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                collect {
+                    transform(it)
+                }
+            }
+        }
     }
 
     private companion object {

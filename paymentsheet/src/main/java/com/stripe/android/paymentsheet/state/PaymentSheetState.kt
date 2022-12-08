@@ -12,6 +12,7 @@ import com.stripe.android.paymentsheet.model.PaymentSelection
 import com.stripe.android.paymentsheet.model.SavedSelection
 import com.stripe.android.paymentsheet.ui.PrimaryButton
 import com.stripe.android.ui.core.Amount
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
@@ -75,8 +76,8 @@ internal sealed interface PaymentSheetState : Parcelable {
     }
 }
 
-internal fun <T> StateFlow<PaymentSheetState>.mapAsLiveData(
+internal fun <T> StateFlow<PaymentSheetState>.mapAsFlow(
     transform: (PaymentSheetState.Full) -> T,
-): LiveData<T> {
-    return filterIsInstance<PaymentSheetState.Full>().map(transform).asLiveData()
+): Flow<T> {
+    return filterIsInstance<PaymentSheetState.Full>().map(transform)
 }

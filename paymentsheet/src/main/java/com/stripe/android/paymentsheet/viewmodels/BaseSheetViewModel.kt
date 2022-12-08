@@ -3,13 +3,7 @@ package com.stripe.android.paymentsheet.viewmodels
 import android.app.Application
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.distinctUntilChanged
-import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.stripe.android.core.Logger
 import com.stripe.android.core.injection.InjectorKey
@@ -35,7 +29,7 @@ import com.stripe.android.paymentsheet.state.LinkState
 import com.stripe.android.paymentsheet.state.PaymentSheetState
 import com.stripe.android.paymentsheet.state.loggedInToLink
 import com.stripe.android.paymentsheet.state.loggedOutOfLink
-import com.stripe.android.paymentsheet.state.mapAsLiveData
+import com.stripe.android.paymentsheet.state.mapAsFlow
 import com.stripe.android.paymentsheet.state.removePaymentMethod
 import com.stripe.android.paymentsheet.toPaymentSelection
 import com.stripe.android.paymentsheet.ui.PrimaryButton
@@ -46,10 +40,13 @@ import com.stripe.android.ui.core.forms.resources.ResourceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -110,16 +107,30 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
 
     protected var mostRecentError: Throwable? = null
 
-    internal val isGooglePayReady: LiveData<Boolean> = state.mapAsLiveData { it.isGooglePayReady }
+    internal val isGooglePayReady: StateFlow<Boolean> = state.mapAsFlow { it.isGooglePayReady }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
     // Don't save the resource repository state because it must be re-initialized
     // with the save server specs when reconstructed.
-    private var _isResourceRepositoryReady = MutableLiveData<Boolean>(null)
+    private var _isResourceRepositoryReady = MutableStateFlow<Boolean?>(null)
 
-    internal val isResourceRepositoryReady: LiveData<Boolean?> =
-        _isResourceRepositoryReady.distinctUntilChanged()
+    internal val isResourceRepositoryReady: StateFlow<Boolean?> =
+        _isResourceRepositoryReady.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
-    internal val isLinkEnabled: LiveData<Boolean> = state.mapAsLiveData { it.isLinkAvailable }
+    internal val isLinkEnabled: StateFlow<Boolean> = state.mapAsFlow { it.isLinkAvailable }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
     fun reportShowNewPaymentOptionForm() {
         eventReporter.onShowNewPaymentOptionForm(
@@ -128,10 +139,20 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
         )
     }
 
-    internal val linkConfiguration: LiveData<LinkPaymentLauncher.Configuration?> =
-        state.mapAsLiveData { it.linkState?.configuration }
+    internal val linkConfiguration: StateFlow<LinkPaymentLauncher.Configuration?> =
+        state.mapAsFlow { it.linkState?.configuration }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                null
+            )
 
-    internal val stripeIntent: LiveData<StripeIntent?> = state.mapAsLiveData { it.stripeIntent }
+    internal val stripeIntent: StateFlow<StripeIntent?> = state.mapAsFlow { it.stripeIntent }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            null
+        )
 
     internal val supportedPaymentMethods: List<LpmRepository.SupportedPaymentMethod>
         get() = fullState?.supportedPaymentMethodTypes.orEmpty().mapNotNull {
@@ -142,42 +163,83 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
      * The list of saved payment methods for the current customer.
      * Value is null until it's loaded, and non-null (could be empty) after that.
      */
-    internal val paymentMethods: LiveData<List<PaymentMethod>> = state.mapAsLiveData {
+    internal val paymentMethods: StateFlow<List<PaymentMethod>> = state.mapAsFlow {
         it.customerPaymentMethods
-    }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        listOf()
+    )
 
     internal val amount: Amount?
         get() = fullState?.amount
 
-    internal val headerText = MutableLiveData<String>()
+    internal val headerText = MutableStateFlow<String?>("")
 
-    private val savedSelection: LiveData<SavedSelection> = state.mapAsLiveData { it.savedSelection }
+    private val savedSelection: StateFlow<SavedSelection> = state.mapAsFlow { it.savedSelection }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            SavedSelection.None
+        )
 
-    private val _transition = MutableLiveData<Event<TransitionTargetType?>>(Event(null))
-    internal val transition: LiveData<Event<TransitionTargetType?>> = _transition
+    private val _transition = MutableStateFlow<Event<TransitionTargetType?>>(Event(null))
+    internal val transition: StateFlow<Event<TransitionTargetType?>> = _transition
 
-    internal val liveMode: LiveData<Boolean> = state.mapAsLiveData { it.stripeIntent.isLiveMode }
-    internal val selection: LiveData<PaymentSelection?> = state.mapAsLiveData { it.selection }
+    internal val liveMode: StateFlow<Boolean> = state.mapAsFlow { it.stripeIntent.isLiveMode }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
+    internal val selection: StateFlow<PaymentSelection?> = state.mapAsFlow { it.selection }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            null
+        )
 
-    val processing: LiveData<Boolean> = state.mapAsLiveData { it.isProcessing }
+    private val editing: StateFlow<Boolean> = state.mapAsFlow { it.isEditing }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
-    private val _contentVisible = MutableLiveData(true)
-    internal val contentVisible: LiveData<Boolean> = _contentVisible.distinctUntilChanged()
+    val processing: StateFlow<Boolean> = state.mapAsFlow { it.isProcessing }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
+
+    private val _contentVisible = MutableStateFlow(true)
+    internal val contentVisible: StateFlow<Boolean> = _contentVisible
 
     /**
      * Use this to override the current UI state of the primary button. The UI state is reset every
      * time the payment selection is changed.
      */
-    val primaryButtonUIState: LiveData<PrimaryButton.UIState?> =
-        state.mapAsLiveData { it.primaryButtonUiState }
+    val primaryButtonUIState: StateFlow<PrimaryButton.UIState?> =
+        state.mapAsFlow { it.primaryButtonUiState }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                null
+            )
 
-    private val _primaryButtonState = MutableLiveData<PrimaryButton.State>()
-    val primaryButtonState: LiveData<PrimaryButton.State> = _primaryButtonState
+    private val _primaryButtonState = MutableStateFlow<PrimaryButton.State?>(null)
+    val primaryButtonState: StateFlow<PrimaryButton.State?> = _primaryButtonState
 
-    internal val notesText: LiveData<String?> = state.mapAsLiveData { it.notesText }
+    internal val notesText: StateFlow<String?> = state.mapAsFlow { it.notesText }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            null
+        )
 
-    private val _showLinkVerificationDialog = MutableLiveData(false)
-    val showLinkVerificationDialog: LiveData<Boolean> = _showLinkVerificationDialog
+    private val _showLinkVerificationDialog = MutableStateFlow(false)
+    val showLinkVerificationDialog: StateFlow<Boolean> = _showLinkVerificationDialog
 
     private val linkVerificationChannel = Channel<Boolean>(capacity = 1)
 
@@ -190,13 +252,23 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
      */
     abstract var newPaymentSelection: PaymentSelection.New?
 
-    open var linkInlineSelection = MutableLiveData<PaymentSelection.New.LinkInline?>(null)
+    open var linkInlineSelection = MutableStateFlow<PaymentSelection.New.LinkInline?>(null)
 
     abstract fun onFatal(throwable: Throwable)
 
-    val buttonsEnabled: LiveData<Boolean> = state.mapAsLiveData { it.areWalletButtonsEnabled }
+    val buttonsEnabled: StateFlow<Boolean> = state.mapAsFlow { it.areWalletButtonsEnabled }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
-    val ctaEnabled: LiveData<Boolean> = state.mapAsLiveData { it.isPrimaryButtonEnabled }
+    val ctaEnabled: StateFlow<Boolean> = state.mapAsFlow { it.isPrimaryButtonEnabled }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
     internal var lpmServerSpec
         get() = savedStateHandle.get<String>(LPM_SERVER_SPEC_STRING)
@@ -214,7 +286,6 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
     }
 
     val paymentOptionsState: StateFlow<PaymentOptionsState> = paymentOptionsStateMapper()
-        .asFlow()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(),
@@ -238,7 +309,7 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
 
                     lpmResourceRepository.waitUntilLoaded()
                     addressResourceRepository.waitUntilLoaded()
-                    _isResourceRepositoryReady.postValue(true)
+                    _isResourceRepositoryReady.update { true }
                 }
             }
         }
@@ -253,20 +324,22 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
 //        }
     }
 
-    val fragmentConfigEvent = MediatorLiveData<FragmentConfig?>().apply {
-        listOf(
-            savedSelection,
-            stripeIntent,
-            paymentMethods,
-            isGooglePayReady,
-            isResourceRepositoryReady,
-            isLinkEnabled
-        ).forEach { source ->
-            addSource(source) {
-                value = createFragmentConfig()
-            }
-        }
-    }.distinctUntilChanged().map {
+    val fragmentConfigEvent: Flow<Event<FragmentConfig?>> = combine(
+            combine(
+                savedSelection,
+                stripeIntent,
+                paymentMethods,
+                ::Triple
+            ),
+            combine(
+                isGooglePayReady,
+                isResourceRepositoryReady,
+                isLinkEnabled,
+                ::Triple
+            )
+        ) { _, _ ->
+        createFragmentConfig()
+    }.map {
         Event(it)
     }
 
@@ -280,33 +353,21 @@ internal abstract class BaseSheetViewModel<TransitionTargetType>(
     private fun createFragmentConfig(): FragmentConfig? {
         val stripeIntentValue = stripeIntent.value
         val isGooglePayReadyValue = isGooglePayReady.value
-        val isResourceRepositoryReadyValue = isResourceRepositoryReady.value
-        val isLinkReadyValue = isLinkEnabled.value
         val savedSelectionValue = savedSelection.value
         // List of Payment Methods is not passed in the config but we still wait for it to be loaded
         // before adding the Fragment.
-        val paymentMethodsValue = paymentMethods.value
 
-        return if (
-            stripeIntentValue != null &&
-            paymentMethodsValue != null &&
-            isGooglePayReadyValue != null &&
-            isResourceRepositoryReadyValue != null &&
-            isLinkReadyValue != null &&
-            savedSelectionValue != null
-        ) {
+        return stripeIntentValue?.let {
             FragmentConfig(
-                stripeIntent = stripeIntentValue,
+                stripeIntent = it,
                 isGooglePayReady = isGooglePayReadyValue,
                 savedSelection = savedSelectionValue
             )
-        } else {
-            null
         }
     }
 
     fun transitionTo(target: TransitionTargetType) {
-        _transition.postValue(Event(target))
+        _transition.update { Event(target) }
     }
 
     fun updatePrimaryButtonUIState(state: PrimaryButton.UIState?) {

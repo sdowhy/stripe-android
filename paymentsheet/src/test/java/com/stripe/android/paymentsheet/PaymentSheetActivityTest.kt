@@ -63,7 +63,6 @@ import com.stripe.android.ui.core.forms.resources.StaticLpmResourceRepository
 import com.stripe.android.utils.FakeCustomerRepository
 import com.stripe.android.utils.FakePaymentSheetLoader
 import com.stripe.android.utils.InjectableActivityScenario
-import com.stripe.android.utils.TestUtils.getOrAwaitValue
 import com.stripe.android.utils.TestUtils.idleLooper
 import com.stripe.android.utils.TestUtils.viewModelFactoryFor
 import com.stripe.android.utils.injectableActivityScenario
@@ -76,6 +75,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Rule
 import org.junit.Test
@@ -142,6 +142,7 @@ internal class PaymentSheetActivityTest {
 
     @BeforeTest
     fun before() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
         viewModel = createViewModel()
         PaymentConfiguration.init(
             context,
@@ -244,7 +245,9 @@ internal class PaymentSheetActivityTest {
     }
 
     @Test
-    fun `when back to Ready state should update PaymentSelection`() {
+    fun `when back to Ready state should update PaymentSelection`() = runTest(
+        UnconfinedTestDispatcher()
+    ) {
         val scenario = activityScenario()
         scenario.launch(intent).onActivity { activity ->
             // wait for bottom sheet to animate in
@@ -264,17 +267,17 @@ internal class PaymentSheetActivityTest {
                 )
             )
 
-            assertThat(viewModel.selection.getOrAwaitValue()).isEqualTo(initialSelection)
+            assertThat(viewModel.selection.value).isEqualTo(initialSelection)
 
             activity.viewBinding.googlePayButton.callOnClick()
 
             // Updates PaymentSelection to Google Pay
-            assertThat(viewModel.selection.getOrAwaitValue()).isEqualTo(PaymentSelection.GooglePay)
+            assertThat(viewModel.selection.value).isEqualTo(PaymentSelection.GooglePay)
 
             viewModel.onGooglePayResult(GooglePayPaymentMethodLauncher.Result.Canceled)
 
             // Back to Ready state, should return to initial PaymentSelection
-            assertThat(viewModel.selection.getOrAwaitValue()).isEqualTo(initialSelection)
+            assertThat(viewModel.selection.value).isEqualTo(initialSelection)
         }
     }
 
