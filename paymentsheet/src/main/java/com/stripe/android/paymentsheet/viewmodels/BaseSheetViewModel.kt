@@ -332,8 +332,6 @@ internal abstract class BaseSheetViewModel(
             savedSelectionValue != null
     }
 
-    abstract fun transitionToFirstScreen()
-
     protected fun transitionTo(target: PaymentSheetScreen) {
         clearErrorMessages()
         backStack.update { it + target }

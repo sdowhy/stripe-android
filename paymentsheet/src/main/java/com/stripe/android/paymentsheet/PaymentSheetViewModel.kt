@@ -195,6 +195,8 @@ internal class PaymentSheetViewModel @Inject internal constructor(
 
     init {
         eventReporter.onInit(config)
+        transitionToFirstScreenWhenReady()
+
         if (googlePayLauncherConfig == null) {
             savedStateHandle[SAVE_GOOGLE_PAY_STATE] = GooglePayState.NotAvailable
         }
@@ -598,7 +600,7 @@ internal class PaymentSheetViewModel @Inject internal constructor(
             is LinkActivityResult.Failed -> PaymentResult.Failed(error)
         }
 
-    fun transitionToFirstScreenWhenReady() {
+    private fun transitionToFirstScreenWhenReady() {
         viewModelScope.launch {
             awaitReady()
             transitionToFirstScreen()
@@ -609,7 +611,7 @@ internal class PaymentSheetViewModel @Inject internal constructor(
         isReadyEvents.asFlow().filter { it.peekContent() }.first()
     }
 
-    override fun transitionToFirstScreen() {
+    private fun transitionToFirstScreen() {
         val target = if (paymentMethods.value.isNullOrEmpty()) {
             updateSelection(null)
             PaymentSheetScreen.AddFirstPaymentMethod

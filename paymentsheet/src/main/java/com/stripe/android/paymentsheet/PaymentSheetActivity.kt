@@ -128,10 +128,6 @@ internal class PaymentSheetActivity : BaseSheetActivity<PaymentSheetResult>() {
             currentScreen.PaymentSheetContent()
         }
 
-        if (savedInstanceState == null) {
-            viewModel.transitionToFirstScreenWhenReady()
-        }
-
         viewModel.startConfirm.observe(this) { event ->
             val confirmParams = event.getContentIfNotHandled()
             if (confirmParams != null) {

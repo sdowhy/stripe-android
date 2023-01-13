@@ -88,10 +88,6 @@ internal class PaymentOptionsActivity : BaseSheetActivity<PaymentOptionResult>()
             currentScreen.PaymentOptionsContent()
         }
 
-        if (savedInstanceState == null) {
-            viewModel.transitionToFirstScreenWhenReady()
-        }
-
         viewModel.selection.observe(this) {
             viewModel.clearErrorMessages()
             resetPrimaryButtonState()

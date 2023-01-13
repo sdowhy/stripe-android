@@ -92,6 +92,8 @@ internal class PaymentOptionsViewModel @Inject constructor(
     )
 
     init {
+        transitionToFirstScreenWhenReady()
+
         savedStateHandle[SAVE_GOOGLE_PAY_STATE] = if (args.state.isGooglePayReady) {
             GooglePayState.Available
         } else {
@@ -271,7 +273,7 @@ internal class PaymentOptionsViewModel @Inject constructor(
             )
     }
 
-    fun transitionToFirstScreenWhenReady() {
+    private fun transitionToFirstScreenWhenReady() {
         viewModelScope.launch {
             awaitReady()
             awaitRepositoriesReady()
@@ -287,7 +289,7 @@ internal class PaymentOptionsViewModel @Inject constructor(
         isResourceRepositoryReady.asFlow().filterNotNull().filter { it }.first()
     }
 
-    override fun transitionToFirstScreen() {
+    private fun transitionToFirstScreen() {
         val target = if (args.state.hasPaymentOptions) {
             SelectSavedPaymentMethods
         } else {

@@ -723,9 +723,7 @@ internal class PaymentSheetViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.currentScreen.test {
-            viewModel.transitionToFirstScreenWhenReady()
             assertThat(awaitItem()).isNull()
-
             viewModel.savedStateHandle[SAVE_GOOGLE_PAY_STATE] = GooglePayState.Available
             assertThat(awaitItem()).isEqualTo(PaymentSheetScreen.AddFirstPaymentMethod)
         }
@@ -954,7 +952,10 @@ internal class PaymentSheetViewModelTest {
 
         viewModel.currentScreen.test {
             assertThat(awaitItem()).isNull()
-            viewModel.transitionToFirstScreen()
+
+            // Add a comment
+            viewModel.savedStateHandle[SAVE_GOOGLE_PAY_STATE] = GooglePayState.Available
+
             assertThat(awaitItem()).isEqualTo(PaymentSheetScreen.AddFirstPaymentMethod)
         }
     }
@@ -967,7 +968,10 @@ internal class PaymentSheetViewModelTest {
 
         viewModel.currentScreen.test {
             assertThat(awaitItem()).isNull()
-            viewModel.transitionToFirstScreen()
+
+            // Add a comment
+            viewModel.savedStateHandle[SAVE_GOOGLE_PAY_STATE] = GooglePayState.Available
+
             assertThat(awaitItem()).isEqualTo(PaymentSheetScreen.SelectSavedPaymentMethods)
         }
     }
