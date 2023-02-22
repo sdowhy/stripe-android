@@ -1,13 +1,20 @@
 package com.stripe.android.paymentsheet
 
+import android.app.Application
 import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.ColorInt
 import androidx.annotation.FontRes
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.Fragment
 import com.stripe.android.link.account.CookieStore
 import com.stripe.android.model.PaymentIntent
@@ -18,6 +25,33 @@ import com.stripe.android.paymentsheet.model.PaymentOption
 import com.stripe.android.uicore.StripeThemeDefaults
 import com.stripe.android.uicore.getRawValueFromDimenResource
 import kotlinx.parcelize.Parcelize
+
+/**
+ * Creates a [PaymentSheet] that is remembered across compositions.
+ *
+ * This *must* be called unconditionally, as part of the initialization path.
+ */
+@Composable
+fun rememberPaymentSheet(
+    callback: PaymentSheetResultCallback,
+): PaymentSheet {
+    val onResult by rememberUpdatedState(newValue = callback::onPaymentSheetResult)
+
+    val activityResultLauncher = rememberLauncherForActivityResult(
+        contract = PaymentSheetContract(),
+        onResult = onResult,
+    )
+
+    val context = LocalContext.current
+
+    return remember {
+        val launcher = DefaultPaymentSheetLauncher(
+            activityResultLauncher = activityResultLauncher,
+            application = context.applicationContext as Application,
+        )
+        PaymentSheet(launcher)
+    }
+}
 
 /**
  * A drop-in class that presents a bottom sheet to collect and process a customer's payment.

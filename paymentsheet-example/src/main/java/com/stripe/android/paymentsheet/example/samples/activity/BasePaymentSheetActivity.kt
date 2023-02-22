@@ -41,6 +41,8 @@ import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.example.R
 import com.stripe.android.paymentsheet.example.samples.viewmodel.PaymentSheetViewModel
 import com.stripe.android.paymentsheet.example.utils.rememberDrawablePainter
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 internal abstract class BasePaymentSheetActivity : AppCompatActivity() {
     protected val viewModel: PaymentSheetViewModel by viewModels()
@@ -67,6 +69,24 @@ internal abstract class BasePaymentSheetActivity : AppCompatActivity() {
             )
 
             viewModel.exampleCheckoutResponse.removeObservers(this)
+        }
+    }
+
+    protected suspend fun prepareCheckout(): Pair<PaymentSheet.CustomerConfiguration?, String> {
+        return suspendCancellableCoroutine { continuation ->
+            viewModel.prepareCheckout(backendUrl)
+
+            viewModel.exampleCheckoutResponse.observe(this) { checkoutResponse ->
+                // Init PaymentConfiguration with the publishable key returned from the backend,
+                // which will be used on all Stripe API calls
+                PaymentConfiguration.init(this, checkoutResponse.publishableKey)
+
+                continuation.resume(
+                    checkoutResponse.makeCustomerConfig() to checkoutResponse.paymentIntent
+                )
+
+                viewModel.exampleCheckoutResponse.removeObservers(this)
+            }
         }
     }
 
