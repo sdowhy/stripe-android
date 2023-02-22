@@ -40,7 +40,7 @@ internal class FlowControllerFactory(
     ) : this(
         viewModelStoreOwner = fragment,
         lifecycleOwner = fragment,
-        appContext = fragment.requireContext(),
+        appContext = fragment.requireContext().applicationContext,
         activityResultRegistryOwner = (fragment.host as? ActivityResultRegistryOwner) ?: fragment.requireActivity(),
         statusBarColor = { fragment.activity?.window?.statusBarColor },
         paymentOptionCallback = paymentOptionCallback,
