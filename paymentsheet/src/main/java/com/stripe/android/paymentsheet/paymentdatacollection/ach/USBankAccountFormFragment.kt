@@ -154,6 +154,7 @@ internal class USBankAccountFormFragment : Fragment() {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
+
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sheetViewModel?.primaryButtonState?.launchAndCollectIn(viewLifecycleOwner) { state ->
@@ -167,14 +168,11 @@ internal class USBankAccountFormFragment : Fragment() {
                 }
             }
         }
+
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.requiredFields.collect {
-                    sheetViewModel?.updatePrimaryButtonUIState(
-                        sheetViewModel?.primaryButtonUIState?.value?.copy(
-                            enabled = it
-                        )
-                    )
+                    sheetViewModel?.setUSBankPrimaryButtonEnabled(it)
                 }
             }
         }
@@ -246,7 +244,7 @@ internal class USBankAccountFormFragment : Fragment() {
 
     override fun onDetach() {
         sheetViewModel?.updateBelowButtonText(null)
-        sheetViewModel?.updatePrimaryButtonUIState(null)
+        sheetViewModel?.updateUSBankPrimaryButtonUiState(null)
         viewModel.onDestroy()
         super.onDetach()
     }
@@ -438,32 +436,25 @@ internal class USBankAccountFormFragment : Fragment() {
     }
 
     private fun updatePrimaryButton(
-        text: String?,
+        text: String,
         onClick: () -> Unit,
         shouldShowProcessingWhenClicked: Boolean = true,
         enabled: Boolean = true,
         visible: Boolean = true
     ) {
         sheetViewModel?.updatePrimaryButtonState(PrimaryButton.State.Ready)
-        sheetViewModel?.updatePrimaryButtonUIState(
+        sheetViewModel?.updateUSBankPrimaryButtonUiState(
             PrimaryButton.UIState(
                 label = text,
                 onClick = {
                     if (shouldShowProcessingWhenClicked) {
-                        sheetViewModel?.updatePrimaryButtonState(
-                            PrimaryButton.State.StartProcessing
-                        )
+                        sheetViewModel?.updatePrimaryButtonState(PrimaryButton.State.StartProcessing)
                     }
                     onClick()
-                    sheetViewModel?.updatePrimaryButtonUIState(
-                        sheetViewModel?.primaryButtonUIState?.value?.copy(
-                            onClick = null
-                        )
-                    )
+                    sheetViewModel?.setUSBankPrimaryButton2()
                 },
                 enabled = enabled,
-                visible = visible
-            )
+            ).takeIf { visible }
         )
     }
 

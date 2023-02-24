@@ -60,6 +60,7 @@ import com.stripe.android.paymentsheet.state.WalletsContainerState
 import com.stripe.android.paymentsheet.ui.HeaderTextFactory
 import com.stripe.android.paymentsheet.ui.PrimaryButton
 import com.stripe.android.paymentsheet.viewmodels.BaseSheetViewModel
+import com.stripe.android.paymentsheet.viewmodels.PrimaryButtonUiStateMapper
 import com.stripe.android.ui.core.forms.resources.LpmRepository
 import com.stripe.android.ui.core.forms.resources.ResourceRepository
 import com.stripe.android.uicore.address.AddressRepository
@@ -70,8 +71,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -114,6 +118,13 @@ internal class PaymentSheetViewModel @Inject internal constructor(
     linkHandler = linkHandler,
     headerTextFactory = HeaderTextFactory(isCompleteFlow = true),
 ) {
+
+    private val primaryButtonUiStateMapper = PrimaryButtonUiStateMapper(
+        context = getApplication(),
+        config = config,
+        isProcessingPayment = isProcessingPaymentIntent,
+        onClick = this::checkout,
+    )
 
     private val _paymentSheetResult = MutableSharedFlow<PaymentSheetResult>(replay = 1)
     internal val paymentSheetResult: SharedFlow<PaymentSheetResult> = _paymentSheetResult
@@ -160,6 +171,23 @@ internal class PaymentSheetViewModel @Inject internal constructor(
                 )
             }
         }
+
+    override val primaryButtonUiState: StateFlow<PrimaryButton.UIState?> = primaryButtonUiStateMapper.forCompleteFlow(
+        currentScreenFlow = currentScreen,
+        buttonsEnabledFlow = buttonsEnabled,
+        amountFlow = amount,
+        selectionFlow = selection,
+        usBankPrimaryButtonUiStateFlow = usBankPrimaryButtonUiState,
+        linkPrimaryButtonUiStateFlow = linkPrimaryButtonUiState,
+    ).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = null,
+    )
+
+    override fun handlePrimaryButtonPressed() {
+        primaryButtonUiState.value?.onClick?.invoke()
+    }
 
     internal val walletsContainerState: Flow<WalletsContainerState> = combine(
         linkHandler.isLinkEnabled,

@@ -126,7 +126,7 @@ internal class PrimaryButton @JvmOverloads constructor(
         return text
     }
 
-    fun setLabel(text: String?) {
+    private fun setLabel(text: String?) {
         externalLabel = text
         text?.let {
             if (state !is State.StartProcessing) {
@@ -176,6 +176,15 @@ internal class PrimaryButton @JvmOverloads constructor(
         updateAlpha()
     }
 
+    fun updateUiState(uiState: UIState?) {
+        isVisible = uiState != null
+
+        if (uiState != null) {
+            setLabel(uiState.label)
+            isEnabled = uiState.enabled
+        }
+    }
+
     fun updateState(state: State?) {
         this.state = state
         updateAlpha()
@@ -220,10 +229,9 @@ internal class PrimaryButton @JvmOverloads constructor(
      * Used to override the current UI state of the Primary Button
      */
     internal data class UIState(
-        val label: String?,
-        val onClick: (() -> Unit)?,
+        val label: String,
+        val onClick: () -> Unit,
         val enabled: Boolean,
-        val visible: Boolean
     )
 }
 

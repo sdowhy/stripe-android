@@ -31,6 +31,7 @@ import com.stripe.android.paymentsheet.state.GooglePayState
 import com.stripe.android.paymentsheet.ui.HeaderTextFactory
 import com.stripe.android.paymentsheet.ui.PrimaryButton
 import com.stripe.android.paymentsheet.viewmodels.BaseSheetViewModel
+import com.stripe.android.paymentsheet.viewmodels.PrimaryButtonUiStateMapper
 import com.stripe.android.ui.core.forms.resources.LpmRepository
 import com.stripe.android.ui.core.forms.resources.ResourceRepository
 import com.stripe.android.uicore.address.AddressRepository
@@ -38,7 +39,9 @@ import com.stripe.android.utils.requireApplication
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Provider
@@ -73,6 +76,14 @@ internal class PaymentOptionsViewModel @Inject constructor(
     linkHandler = linkHandler,
     headerTextFactory = HeaderTextFactory(isCompleteFlow = false),
 ) {
+
+    private val primaryButtonUiStateMapper = PrimaryButtonUiStateMapper(
+        context = getApplication(),
+        config = config,
+        isProcessingPayment = false,
+        onClick = this::onUserSelection,
+    )
+
     private val _paymentOptionResult = MutableSharedFlow<PaymentOptionResult>(replay = 1)
     internal val paymentOptionResult: SharedFlow<PaymentOptionResult> = _paymentOptionResult
 
@@ -82,6 +93,22 @@ internal class PaymentOptionsViewModel @Inject constructor(
     // Only used to determine if we should skip the list and go to the add card view.
     // and how to populate that view.
     override var newPaymentSelection = args.state.newPaymentSelection
+
+    override val primaryButtonUiState: StateFlow<PrimaryButton.UIState?> = primaryButtonUiStateMapper.forCustomFlow(
+        currentScreenFlow = currentScreen,
+        buttonsEnabledFlow = buttonsEnabled,
+        selectionFlow = selection,
+        usBankPrimaryButtonUiStateFlow = usBankPrimaryButtonUiState,
+        linkPrimaryButtonUiStateFlow = linkPrimaryButtonUiState,
+    ).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = null,
+    )
+
+    override fun handlePrimaryButtonPressed() {
+        primaryButtonUiState.value?.onClick?.invoke()
+    }
 
     init {
         savedStateHandle[SAVE_GOOGLE_PAY_STATE] = if (args.state.isGooglePayReady) {
@@ -239,40 +266,40 @@ internal class PaymentOptionsViewModel @Inject constructor(
                 updateBelowButtonText(
                     ACHText.getContinueMandateText(getApplication())
                 )
-                updatePrimaryButtonUIState(
-                    PrimaryButton.UIState(
-                        label = getApplication<Application>().getString(
-                            R.string.stripe_continue_button_label
-                        ),
-                        visible = true,
-                        enabled = true,
-                        onClick = {
-                            processExistingPaymentMethod(selection)
-                        }
-                    )
-                )
+//                updatePrimaryButtonUIState(
+//                    PrimaryButton.UIState(
+//                        label = getApplication<Application>().getString(
+//                            R.string.stripe_continue_button_label
+//                        ),
+//                        visible = true,
+//                        enabled = true,
+//                        onClick = {
+//                            processExistingPaymentMethod(selection)
+//                        }
+//                    )
+//                )
             }
-            selection is PaymentSelection.Saved ||
-                selection is PaymentSelection.GooglePay -> {
-                updatePrimaryButtonUIState(
-                    primaryButtonUIState.value?.copy(
-                        visible = false
-                    )
-                )
-            }
+//            selection is PaymentSelection.Saved ||
+//                selection is PaymentSelection.GooglePay -> {
+//                updatePrimaryButtonUIState(
+//                    primaryButtonUIState.value?.copy(
+//                        visible = false
+//                    )
+//                )
+//            }
             else -> {
-                updatePrimaryButtonUIState(
-                    primaryButtonUIState.value?.copy(
-                        label = getApplication<Application>().getString(
-                            R.string.stripe_continue_button_label
-                        ),
-                        visible = true,
-                        enabled = true,
-                        onClick = {
-                            onUserSelection()
-                        }
-                    )
-                )
+//                updatePrimaryButtonUIState(
+//                    primaryButtonUIState.value?.copy(
+//                        label = getApplication<Application>().getString(
+//                            R.string.stripe_continue_button_label
+//                        ),
+//                        visible = true,
+//                        enabled = true,
+//                        onClick = {
+//                            onUserSelection()
+//                        }
+//                    )
+//                )
             }
         }
     }
