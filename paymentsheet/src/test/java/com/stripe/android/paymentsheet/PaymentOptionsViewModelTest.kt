@@ -193,9 +193,8 @@ internal class PaymentOptionsViewModelTest {
 
         viewModel.removePaymentMethod(paymentMethod)
 
-        assertThat(viewModel.paymentMethods.value)
-            .isEmpty()
-        assertThat(viewModel.primaryButtonUIState.value).isNull()
+        assertThat(viewModel.paymentMethods.value).isEmpty()
+        assertThat(viewModel.primaryButtonUiState.value).isNull()
         assertThat(viewModel.notesText.value).isNull()
     }
 

@@ -75,12 +75,17 @@ class PrimaryButtonTest {
 
     @Test
     fun `onReadyState() should update label`() {
-        primaryButton.setLabel("Pay $10.99")
+        primaryButton.updateUiState(
+            PrimaryButton.UIState(
+                label = "Pay $10.99",
+                onClick = {},
+                enabled = true,
+            )
+        )
+
         primaryButton.backgroundTintList = ColorStateList.valueOf(Color.BLACK)
 
-        primaryButton.updateState(
-            PrimaryButton.State.StartProcessing
-        )
+        primaryButton.updateState(PrimaryButton.State.StartProcessing)
         assertThat(
             primaryButton.externalLabel
         ).isEqualTo(
