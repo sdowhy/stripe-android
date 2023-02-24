@@ -27,7 +27,6 @@ import com.stripe.android.model.PaymentMethodCreateParamsFixtures
 import com.stripe.android.model.PaymentMethodFixtures
 import com.stripe.android.model.PaymentMethodOptionsParams
 import com.stripe.android.model.StripeIntent
-import com.stripe.android.networking.StripeRepository
 import com.stripe.android.payments.paymentlauncher.PaymentResult
 import com.stripe.android.paymentsheet.PaymentSheetViewModel.CheckoutIdentifier
 import com.stripe.android.paymentsheet.addresselement.AddressDetails
@@ -86,8 +85,8 @@ internal class PaymentSheetViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private val eventReporter = mock<EventReporter>()
-    private val stripeRepository = mock<StripeRepository>()
     private val stripeIntentValidator = mock<StripeIntentValidator>()
+    private val deferredIntentRepository = mock<DeferredIntentRepository>()
     private val application = ApplicationProvider.getApplicationContext<Application>()
 
     private val lpmRepository = LpmRepository(
@@ -268,17 +267,15 @@ internal class PaymentSheetViewModelTest {
 
     @Test
     fun `checkout() with a deferred payment intent confirms client side`() = runTest {
+        whenever(deferredIntentRepository.get(any(), any()))
+            .thenReturn(
+                DeferredIntentRepository.Result.Success(
+                    clientSecret = PaymentSheetFixtures.PAYMENT_INTENT_CLIENT_SECRET,
+                    stripeIntent = mock()
+                )
+            )
         whenever(stripeIntentValidator.requireValid(any()))
             .thenReturn(mock())
-        whenever(stripeRepository.createPaymentMethod(any(), any()))
-            .thenReturn(PaymentMethodFixtures.CARD_PAYMENT_METHOD)
-        var confirmCallbackCalled = false
-        PaymentSheet.retrieveConfirmCallback = ConfirmCallback {
-            confirmCallbackCalled = true
-            ConfirmCallback.Result.Success(
-                clientSecret = CLIENT_SECRET
-            )
-        }
 
         val viewModel = spy(
             createViewModel(
@@ -313,7 +310,6 @@ internal class PaymentSheetViewModelTest {
             .isInstanceOf(PaymentSheetViewState.StartProcessing::class.java)
 
         verify(viewModel).confirmStripeIntent(any())
-        assertThat(confirmCallbackCalled).isTrue()
 
         viewStateTurbine.ensureAllEventsConsumed()
 
@@ -322,17 +318,15 @@ internal class PaymentSheetViewModelTest {
 
     @Test
     fun `checkout() with a deferred payment intent confirms server side`() = runTest {
-        whenever(stripeIntentValidator.requireValid(any())).thenThrow(IllegalStateException("already succeeded"))
-        whenever(stripeRepository.createPaymentMethod(any(), any())).thenReturn(
-            PaymentMethodFixtures.CARD_PAYMENT_METHOD
-        )
-        var confirmCallbackCalled = false
-        PaymentSheet.retrieveConfirmCallback = ConfirmCallback {
-            confirmCallbackCalled = true
-            ConfirmCallback.Result.Success(
-                clientSecret = CLIENT_SECRET
+        whenever(deferredIntentRepository.get(any(), any()))
+            .thenReturn(
+                DeferredIntentRepository.Result.Success(
+                    clientSecret = PaymentSheetFixtures.PAYMENT_INTENT_CLIENT_SECRET,
+                    stripeIntent = mock()
+                )
             )
-        }
+        whenever(stripeIntentValidator.requireValid(any())).thenThrow(IllegalStateException("already succeeded"))
+
         val viewModel = spy(
             createViewModel(
                 args = ARGS_CUSTOMER_WITH_GOOGLEPAY.copy(
@@ -367,7 +361,6 @@ internal class PaymentSheetViewModelTest {
             .isEqualTo(PaymentSheetViewState.StartProcessing)
 
         verify(viewModel, never()).confirmStripeIntent(any())
-        assertThat(confirmCallbackCalled).isTrue()
 
         val viewState = viewStateTurbine.awaitItem()
         assertThat(viewState)
@@ -1407,7 +1400,6 @@ internal class PaymentSheetViewModelTest {
                 eventReporter,
                 { paymentConfiguration },
                 ElementsSessionRepository.Static(stripeIntent),
-                stripeRepository,
                 stripeIntentValidator,
                 FakePaymentSheetLoader(
                     stripeIntent = stripeIntent,
@@ -1427,7 +1419,8 @@ internal class PaymentSheetViewModelTest {
                 testDispatcher,
                 DUMMY_INJECTOR_KEY,
                 savedStateHandle = savedStateHandle,
-                linkHandler
+                linkHandler,
+                deferredIntentRepository
             )
         }
     }
