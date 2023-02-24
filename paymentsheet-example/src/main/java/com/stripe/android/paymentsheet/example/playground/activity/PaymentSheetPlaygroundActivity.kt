@@ -16,7 +16,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.MenuProvider
 import androidx.core.view.isInvisible
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.test.espresso.IdlingResource
@@ -25,6 +24,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.core.model.CountryCode
 import com.stripe.android.core.model.CountryUtils
+import com.stripe.android.paymentsheet.ConfirmCallback
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.addresselement.AddressDetails
@@ -41,8 +41,6 @@ import com.stripe.android.paymentsheet.example.playground.model.Shipping
 import com.stripe.android.paymentsheet.example.playground.model.Toggle
 import com.stripe.android.paymentsheet.example.playground.viewmodel.PaymentSheetPlaygroundViewModel
 import com.stripe.android.paymentsheet.model.PaymentOption
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -165,12 +163,41 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.root)
 
-        paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
-        flowController = PaymentSheet.FlowController.create(
-            this,
-            ::onPaymentOption,
-            ::onPaymentSheetResult
+        paymentSheet = PaymentSheet(
+            activity = this,
+            callback = ::onPaymentSheetResult,
+            retrieveConfirmCallback = { paymentMethodId ->
+                val response = viewModel.createPaymentIntent(
+                    paymentMethodId = paymentMethodId,
+                    amount = (viewModel.intentConfigurationMode.value as? PaymentSheet.IntentConfiguration.Mode.Payment)?.amount,
+                    currency = currency.value,
+                    confirm = true
+                )
+
+                ConfirmCallback.Result.Success(
+                    clientSecret = response.clientSecret
+                )
+            }
         )
+
+        flowController = PaymentSheet.FlowController.create(
+            activity = this,
+            paymentOptionCallback = ::onPaymentOption,
+            paymentResultCallback = ::onPaymentSheetResult,
+            retrieveConfirmCallback = { paymentMethodId ->
+                val response = viewModel.createPaymentIntent(
+                    paymentMethodId = paymentMethodId,
+                    amount = (viewModel.intentConfigurationMode.value as? PaymentSheet.IntentConfiguration.Mode.Payment)?.amount,
+                    currency = currency.value,
+                    confirm = false
+                )
+
+                ConfirmCallback.Result.Success(
+                    clientSecret = response.clientSecret
+                )
+            }
+        )
+
         addressLauncher = AddressLauncher(this, ::onAddressLauncherResult)
 
         viewBinding.initializationRadioGroup.setOnCheckedChangeListener { _, checkedId ->
@@ -479,6 +506,8 @@ class PaymentSheetPlaygroundActivity : AppCompatActivity() {
                     paymentMethodTypes = viewModel.paymentMethodTypes.value,
                 )
             )
+
+            viewModel.intentConfigurationMode.value = mode
 
             paymentSheet.present(
                 mode = initMode,

@@ -20,6 +20,7 @@ import com.stripe.android.core.injection.Injector
 import com.stripe.android.core.injection.InjectorKey
 import com.stripe.android.core.injection.NonFallbackInjector
 import com.stripe.android.core.injection.injectWithFallback
+import com.stripe.android.core.networking.ApiRequest
 import com.stripe.android.googlepaylauncher.GooglePayEnvironment
 import com.stripe.android.googlepaylauncher.GooglePayPaymentMethodLauncher
 import com.stripe.android.googlepaylauncher.GooglePayPaymentMethodLauncherContract
@@ -31,6 +32,7 @@ import com.stripe.android.model.PaymentIntent
 import com.stripe.android.model.PaymentMethod
 import com.stripe.android.model.PaymentMethod.Type.Card
 import com.stripe.android.model.StripeIntent
+import com.stripe.android.networking.StripeRepository
 import com.stripe.android.payments.paymentlauncher.PaymentLauncherContract
 import com.stripe.android.payments.paymentlauncher.PaymentResult
 import com.stripe.android.payments.paymentlauncher.StripePaymentLauncher
@@ -42,6 +44,7 @@ import com.stripe.android.paymentsheet.extensions.unregisterPollingAuthenticator
 import com.stripe.android.paymentsheet.injection.DaggerPaymentSheetLauncherComponent
 import com.stripe.android.paymentsheet.injection.PaymentSheetViewModelModule
 import com.stripe.android.paymentsheet.injection.PaymentSheetViewModelSubcomponent
+import com.stripe.android.paymentsheet.model.ClientSecret
 import com.stripe.android.paymentsheet.model.ConfirmStripeIntentParamsFactory
 import com.stripe.android.paymentsheet.model.PaymentIntentClientSecret
 import com.stripe.android.paymentsheet.model.PaymentSelection
@@ -86,6 +89,7 @@ internal class PaymentSheetViewModel @Inject internal constructor(
     // Properties provided through injection
     private val lazyPaymentConfig: Lazy<PaymentConfiguration>,
     private val elementsSessionRepository: ElementsSessionRepository,
+    private val stripeRepository: StripeRepository,
     private val stripeIntentValidator: StripeIntentValidator,
     private val paymentSheetLoader: PaymentSheetLoader,
     customerRepository: CustomerRepository,
@@ -417,34 +421,123 @@ internal class PaymentSheetViewModel @Inject internal constructor(
     }
 
     private fun confirmPaymentSelection(paymentSelection: PaymentSelection?) {
-        val clientSecret = when (val mode = args.initializationMode) {
-            is PaymentSheet.InitializationMode.PaymentIntent -> {
-                PaymentIntentClientSecret(mode.clientSecret)
+        viewModelScope.launch {
+            val clientSecret = when (val mode = args.initializationMode) {
+                is PaymentSheet.InitializationMode.PaymentIntent -> {
+                    PaymentIntentClientSecret(mode.clientSecret)
+                }
+                is PaymentSheet.InitializationMode.SetupIntent -> {
+                    SetupIntentClientSecret(mode.clientSecret)
+                }
+                is PaymentSheet.InitializationMode.DeferredIntent -> {
+                    val clientSecret = try {
+                        val paymentMethodId = retrievePaymentMethodId(paymentSelection)
+                        retrieveClientSecret(mode, paymentMethodId)
+                    } catch (ex: IllegalStateException) {
+                        onError(ex.message)
+                        return@launch
+                    }
+
+                    try {
+                        val stripeIntent = retrieveDeferredIntent(mode, clientSecret)
+                        stripeIntentValidator.requireValid(stripeIntent)
+                    } catch (_: Exception) {
+                        onPaymentResult(PaymentResult.Completed)
+                        return@launch
+                    }
+
+                    clientSecret
+                }
             }
-            is PaymentSheet.InitializationMode.SetupIntent -> {
-                SetupIntentClientSecret(mode.clientSecret)
-            }
-            is PaymentSheet.InitializationMode.DeferredIntent -> {
-                TODO("Not implemented yet")
+
+            val confirmParamsFactory = ConfirmStripeIntentParamsFactory.createFactory(
+                clientSecret = clientSecret,
+                shipping = args.config?.shippingDetails?.toConfirmPaymentIntentShipping()
+            )
+
+            when (paymentSelection) {
+                is PaymentSelection.Saved -> {
+                    confirmParamsFactory.create(paymentSelection)
+                }
+                is PaymentSelection.New -> {
+                    confirmParamsFactory.create(paymentSelection)
+                }
+                else -> null
+            }?.let { confirmParams ->
+                confirmStripeIntent(confirmParams)
             }
         }
+    }
 
-        val confirmParamsFactory = ConfirmStripeIntentParamsFactory.createFactory(
-            clientSecret = clientSecret,
-            shipping = args.config?.shippingDetails?.toConfirmPaymentIntentShipping()
+    private suspend fun retrieveDeferredIntent(
+        mode: PaymentSheet.InitializationMode,
+        clientSecret: ClientSecret
+    ): StripeIntent {
+        return elementsSessionRepository.get(
+            if (mode.isProcessingPayment) {
+                PaymentSheet.InitializationMode.PaymentIntent(clientSecret.value)
+            } else {
+                PaymentSheet.InitializationMode.SetupIntent(clientSecret.value)
+            }
+        ).stripeIntent
+    }
+
+    private suspend fun retrieveClientSecret(
+        mode: PaymentSheet.InitializationMode,
+        paymentMethodId: String
+    ): ClientSecret {
+        val confirmResponse = retrieveConfirmResponseForDeferredIntent(
+            paymentMethodId = paymentMethodId
         )
-
-        when (paymentSelection) {
-            is PaymentSelection.Saved -> {
-                confirmParamsFactory.create(paymentSelection)
+        return when (confirmResponse) {
+            is ConfirmCallback.Result.Failure -> {
+                error(confirmResponse.error)
             }
-            is PaymentSelection.New -> {
-                confirmParamsFactory.create(paymentSelection)
+            is ConfirmCallback.Result.Success -> {
+                if (mode.isProcessingPayment) {
+                    PaymentIntentClientSecret(confirmResponse.clientSecret)
+                } else {
+                    SetupIntentClientSecret(confirmResponse.clientSecret)
+                }
             }
-            else -> null
-        }?.let { confirmParams ->
-            confirmStripeIntent(confirmParams)
         }
+    }
+
+    private suspend fun retrievePaymentMethodId(
+        paymentSelection: PaymentSelection?
+    ): String {
+        return paymentSelection?.let {
+            when (paymentSelection) {
+                is PaymentSelection.Saved -> {
+                    paymentSelection.paymentMethod.id
+                }
+                is PaymentSelection.New -> {
+                    stripeRepository.createPaymentMethod(
+                        paymentSelection.paymentMethodCreateParams,
+                        ApiRequest.Options(
+                            apiKey = lazyPaymentConfig.get().publishableKey,
+                            stripeAccount = lazyPaymentConfig.get().stripeAccountId
+                        )
+                    )?.id
+                }
+                else -> {
+                    null
+                }
+            }
+        } ?: error(
+            getApplication<Application>().getString(R.string.stripe_failure_reason_authentication)
+        )
+    }
+
+    private suspend fun retrieveConfirmResponseForDeferredIntent(
+        paymentMethodId: String
+    ): ConfirmCallback.Result {
+        return PaymentSheet.retrieveConfirmCallback?.onRetrieveConfirmResponse(
+            paymentMethodId
+        ) ?: error(
+            "The DeferredIntent initialization mode requires the ClientSecretCallback to be " +
+                "implemented. Implement the callback using the PaymentSheet initializer."
+        )
     }
 
     override fun onPaymentResult(paymentResult: PaymentResult) {
@@ -613,12 +706,3 @@ internal class PaymentSheetViewModel @Inject internal constructor(
         None
     }
 }
-
-private val PaymentSheet.InitializationMode.isProcessingPayment: Boolean
-    get() = when (this) {
-        is PaymentSheet.InitializationMode.PaymentIntent -> true
-        is PaymentSheet.InitializationMode.SetupIntent -> false
-        is PaymentSheet.InitializationMode.DeferredIntent -> {
-            intentConfiguration.mode is PaymentSheet.IntentConfiguration.Mode.Payment
-        }
-    }

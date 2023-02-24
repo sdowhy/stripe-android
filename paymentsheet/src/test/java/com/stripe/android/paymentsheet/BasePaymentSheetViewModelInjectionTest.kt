@@ -90,6 +90,7 @@ internal open class BasePaymentSheetViewModelInjectionTest {
                 eventReporter,
                 { PaymentConfiguration(ApiKeyFixtures.FAKE_PUBLISHABLE_KEY) },
                 ElementsSessionRepository.Static(stripeIntent),
+                stripeRepository = mock(),
                 StripeIntentValidator(),
                 FakePaymentSheetLoader(
                     stripeIntent = stripeIntent,

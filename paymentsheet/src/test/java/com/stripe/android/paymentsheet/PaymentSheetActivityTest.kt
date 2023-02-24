@@ -1049,6 +1049,7 @@ internal class PaymentSheetActivityTest {
                 eventReporter,
                 { PaymentConfiguration(ApiKeyFixtures.FAKE_PUBLISHABLE_KEY) },
                 ElementsSessionRepository.Static(paymentIntent),
+                stripeRepository = mock(),
                 StripeIntentValidator(),
                 FakePaymentSheetLoader(
                     stripeIntent = paymentIntent,
